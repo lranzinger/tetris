@@ -1,0 +1,18 @@
+[package]
+name = "tetris"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wasm-bindgen = "0.2"
+web-sys = { version = "0.3", features = [
+    "Window",
+    "Document", 
+    "HtmlCanvasElement",
+    "CanvasRenderingContext2d",
+    "Element",
+    "KeyboardEvent"
+]}
+
+[lib]
+crate-type = ["cdylib"]
