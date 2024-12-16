@@ -44,6 +44,9 @@ struct Game {
     game_over: bool,
     current_score: u32,
     high_score: u32,
+    touch_start: Option<(f32, f32)>,
+    last_move_time: f64,
+    keys_held: Vec<KeyCode>,
 }
 
 impl Game {
@@ -57,6 +60,9 @@ impl Game {
             game_over: false,
             current_score: 0,
             high_score: 0,
+            touch_start: None,
+            last_move_time: 0.0,
+            keys_held: Vec::new(),
         };
         game.spawn_piece();
         game
@@ -165,10 +171,83 @@ impl Game {
         false
     }
 
+    fn handle_input(&mut self) {
+        let current_time = get_time();
+        let move_delay = 0.2; // Delay between repeated moves
+
+        // Handle touch input
+        if is_mouse_button_pressed(MouseButton::Left) {
+            self.touch_start = Some(mouse_position());
+        } else if is_mouse_button_released(MouseButton::Left) {
+            if let Some(start_pos) = self.touch_start {
+                let (end_x, end_y) = mouse_position();
+                let dx = end_x - start_pos.0;
+                let dy = end_y - start_pos.1;
+                
+                // Determine swipe direction
+                if dx.abs() > dy.abs() {
+                    if dx > 30.0 && self.can_move(1, 0) {
+                        self.current_position.0 += 1;
+                    } else if dx < -30.0 && self.can_move(-1, 0) {
+                        self.current_position.0 -= 1;
+                    }
+                } else if dy > 30.0 && self.can_move(0, 1) {
+                    self.current_position.1 += 1;
+                } else if dy < -30.0 {
+                    self.try_rotation();
+                }
+            }
+            self.touch_start = None;
+        }
+
+        // Handle keyboard input with holding
+        for key in [KeyCode::Left, KeyCode::Right, KeyCode::Down] {
+            if is_key_pressed(key) {
+                self.keys_held.push(key);
+                self.last_move_time = current_time;
+                self.apply_move(key);
+            }
+        }
+
+        // Handle held keys
+        if current_time - self.last_move_time > move_delay {
+            let keys_to_process: Vec<KeyCode> = self.keys_held.clone();
+            for &key in &keys_to_process {
+                self.apply_move(key);
+            }
+            self.last_move_time = current_time;
+        }
+
+        // Remove released keys
+        self.keys_held.retain(|&key| is_key_down(key));
+
+        // Handle rotation (no holding)
+        if is_key_pressed(KeyCode::Up) {
+            self.try_rotation();
+        }
+    }
+
+    fn apply_move(&mut self, key: KeyCode) {
+        match key {
+            KeyCode::Left => if self.can_move(-1, 0) {
+                self.current_position.0 -= 1;
+            },
+            KeyCode::Right => if self.can_move(1, 0) {
+                self.current_position.0 += 1;
+            },
+            KeyCode::Down => if self.can_move(0, 1) {
+                self.current_position.1 += 1;
+            },
+            _ => {}
+        }
+    }
+
     fn update(&mut self) {
         if self.game_over {
             return;
         }
+
+        self.handle_input();
 
         self.frame_count += 1;
         if self.frame_count % 20 == 0 {
@@ -179,19 +258,6 @@ impl Game {
                 self.clear_lines();
                 self.spawn_piece();
             }
-        }
-
-        if is_key_pressed(KeyCode::Left) && self.can_move(-1, 0) {
-            self.current_position.0 -= 1;
-        }
-        if is_key_pressed(KeyCode::Right) && self.can_move(1, 0) {
-            self.current_position.0 += 1;
-        }
-        if is_key_pressed(KeyCode::Down) && self.can_move(0, 1) {
-            self.current_position.1 += 1;
-        }
-        if is_key_pressed(KeyCode::Up) {
-            self.try_rotation();
         }
 
         if self.is_game_over() {
