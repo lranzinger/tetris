@@ -3,6 +3,15 @@ use macroquad::prelude::*;
 const WIDTH: i32 = 10;
 const HEIGHT: i32 = 20;
 
+fn window_conf() -> Conf {
+    Conf {
+        window_title: "Tetris".to_owned(),
+        high_dpi: true,
+        window_resizable: true,
+        ..Default::default()
+    }
+}
+
 #[derive(Clone, Copy)]
 enum Tetromino {
     I, O, T, S, Z, J, L,
@@ -552,7 +561,7 @@ impl Game {
     }
 }
 
-#[macroquad::main("Tetris")]
+#[macroquad::main(window_conf)]
 async fn main() {
     let mut game = Game::new();
 
