@@ -2,7 +2,6 @@ use macroquad::prelude::*;
 
 const WIDTH: i32 = 10;
 const HEIGHT: i32 = 20;
-const BLOCK_SIZE: f32 = 30.0;
 
 #[derive(Clone, Copy)]
 enum Tetromino {
@@ -35,6 +34,34 @@ impl Tetromino {
     }
 }
 
+struct ScreenConfig {
+    block_size: f32,
+    offset_x: f32,
+    offset_y: f32,
+}
+
+impl ScreenConfig {
+    fn new() -> Self {
+        let screen_width = screen_width();
+        let screen_height = screen_height();
+        
+        // Calculate optimal block size
+        let scale_x = screen_width / WIDTH as f32;
+        let scale_y = screen_height / HEIGHT as f32;
+        let block_size = scale_x.min(scale_y) * 0.95; // 95% of available space
+        
+        // Center the game field
+        let offset_x = (screen_width - (WIDTH as f32 * block_size)) / 2.0;
+        let offset_y = (screen_height - (HEIGHT as f32 * block_size)) / 2.0;
+        
+        Self {
+            block_size,
+            offset_x,
+            offset_y,
+        }
+    }
+}
+
 struct Game {
     board: [[Option<Color>; WIDTH as usize]; HEIGHT as usize],
     current_piece: Tetromino,
@@ -47,6 +74,7 @@ struct Game {
     touch_start: Option<(f32, f32)>,
     last_move_time: f64,
     keys_held: Vec<KeyCode>,
+    screen: ScreenConfig,
 }
 
 impl Game {
@@ -63,6 +91,7 @@ impl Game {
             touch_start: None,
             last_move_time: 0.0,
             keys_held: Vec::new(),
+            screen: ScreenConfig::new(),
         };
         game.spawn_piece();
         game
@@ -266,44 +295,38 @@ impl Game {
     }
 
     fn draw_block(&self, x: f32, y: f32, color: Color) {
-        // Draw main block
         draw_rectangle(
-            x * BLOCK_SIZE,
-            y * BLOCK_SIZE,
-            BLOCK_SIZE,
-            BLOCK_SIZE,
+            self.screen.offset_x + x * self.screen.block_size,
+            self.screen.offset_y + y * self.screen.block_size,
+            self.screen.block_size,
+            self.screen.block_size,
             color
         );
         
-        // Draw outline (1 pixel wide)
-        let outline_color = Color::new(
-            color.r * 0.7,
-            color.g * 0.7,
-            color.b * 0.7,
-            1.0
-        );
-        
         draw_rectangle_lines(
-            x * BLOCK_SIZE,
-            y * BLOCK_SIZE,
-            BLOCK_SIZE,
-            BLOCK_SIZE,
+            self.screen.offset_x + x * self.screen.block_size,
+            self.screen.offset_y + y * self.screen.block_size,
+            self.screen.block_size,
+            self.screen.block_size,
             2.0,
-            outline_color
+            Color::new(color.r * 0.7, color.g * 0.7, color.b * 0.7, 1.0)
         );
     }
 
     fn draw(&mut self) {
         clear_background(BLACK);
-
-        // Draw game field border and grid
-        let field_width = WIDTH as f32 * BLOCK_SIZE;
-        let field_height = HEIGHT as f32 * BLOCK_SIZE;
         
-        // Draw main border
+        // Update screen config each frame for dynamic resizing
+        self.screen = ScreenConfig::new();
+        
+        // Draw game field
+        let field_width = WIDTH as f32 * self.screen.block_size;
+        let field_height = HEIGHT as f32 * self.screen.block_size;
+        
+        // Draw border
         draw_rectangle_lines(
-            0.0,
-            0.0,
+            self.screen.offset_x,
+            self.screen.offset_y,
             field_width,
             field_height,
             2.0,
@@ -313,10 +336,10 @@ impl Game {
         // Draw grid lines
         for x in 0..WIDTH {
             draw_line(
-                x as f32 * BLOCK_SIZE,
-                0.0,
-                x as f32 * BLOCK_SIZE,
-                field_height,
+                self.screen.offset_x + x as f32 * self.screen.block_size,
+                self.screen.offset_y,
+                self.screen.offset_x + x as f32 * self.screen.block_size,
+                self.screen.offset_y + field_height,
                 1.0,
                 DARKGRAY
             );
@@ -324,10 +347,10 @@ impl Game {
         
         for y in 0..HEIGHT {
             draw_line(
-                0.0,
-                y as f32 * BLOCK_SIZE,
-                field_width,
-                y as f32 * BLOCK_SIZE,
+                self.screen.offset_x,
+                self.screen.offset_y + y as f32 * self.screen.block_size,
+                self.screen.offset_x + field_width,
+                self.screen.offset_y + y as f32 * self.screen.block_size,
                 1.0,
                 DARKGRAY
             );
