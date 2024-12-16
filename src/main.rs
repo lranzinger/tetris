@@ -199,40 +199,103 @@ impl Game {
         }
     }
 
-    fn draw(&self) {
+    fn draw_block(&self, x: f32, y: f32, color: Color) {
+        // Draw main block
+        draw_rectangle(
+            x * BLOCK_SIZE,
+            y * BLOCK_SIZE,
+            BLOCK_SIZE,
+            BLOCK_SIZE,
+            color
+        );
+        
+        // Draw outline (1 pixel wide)
+        let outline_color = Color::new(
+            color.r * 0.7,
+            color.g * 0.7,
+            color.b * 0.7,
+            1.0
+        );
+        
+        draw_rectangle_lines(
+            x * BLOCK_SIZE,
+            y * BLOCK_SIZE,
+            BLOCK_SIZE,
+            BLOCK_SIZE,
+            2.0,
+            outline_color
+        );
+    }
+
+    fn draw(&mut self) {
         clear_background(BLACK);
 
+        // Draw game field border and grid
+        let field_width = WIDTH as f32 * BLOCK_SIZE;
+        let field_height = HEIGHT as f32 * BLOCK_SIZE;
+        
+        // Draw main border
+        draw_rectangle_lines(
+            0.0,
+            0.0,
+            field_width,
+            field_height,
+            2.0,
+            GRAY
+        );
+
+        // Draw grid lines
+        for x in 0..WIDTH {
+            draw_line(
+                x as f32 * BLOCK_SIZE,
+                0.0,
+                x as f32 * BLOCK_SIZE,
+                field_height,
+                1.0,
+                DARKGRAY
+            );
+        }
+        
+        for y in 0..HEIGHT {
+            draw_line(
+                0.0,
+                y as f32 * BLOCK_SIZE,
+                field_width,
+                y as f32 * BLOCK_SIZE,
+                1.0,
+                DARKGRAY
+            );
+        }
+
+        // Draw placed pieces with outline
         for y in 0..HEIGHT {
             for x in 0..WIDTH {
                 if let Some(color) = self.board[y as usize][x as usize] {
-                    draw_rectangle(
-                        x as f32 * BLOCK_SIZE,
-                        y as f32 * BLOCK_SIZE,
-                        BLOCK_SIZE,
-                        BLOCK_SIZE,
-                        color,
-                    );
+                    self.draw_block(x as f32, y as f32, color);
                 }
             }
         }
 
+        // Draw current piece with outline
         for &(x, y) in &self.get_rotated_shape() {
             let draw_x = self.current_position.0 + x;
             let draw_y = self.current_position.1 + y;
             if draw_y >= 0 {
-                draw_rectangle(
-                    draw_x as f32 * BLOCK_SIZE,
-                    draw_y as f32 * BLOCK_SIZE,
-                    BLOCK_SIZE,
-                    BLOCK_SIZE,
-                    self.current_piece.color(),
+                self.draw_block(
+                    draw_x as f32,
+                    draw_y as f32,
+                    self.current_piece.color()
                 );
             }
         }
 
         if self.game_over {
             let text = "Game Over!";
+            let button_text = "Click to Restart";
             let font_size = 30.0;
+            let button_font_size = 20.0;
+
+            // Draw game over text
             let text_dims = measure_text(text, None, font_size as u16, 1.0);
             draw_text(
                 text,
@@ -241,6 +304,39 @@ impl Game {
                 font_size,
                 WHITE,
             );
+
+            // Draw restart button
+            let button_dims = measure_text(button_text, None, button_font_size as u16, 1.0);
+            let button_x = screen_width() / 2.0 - button_dims.width / 2.0 - 10.0;
+            let button_y = screen_height() / 2.0 + 30.0;
+            let button_width = button_dims.width + 20.0;
+            let button_height = button_dims.height + 20.0;
+
+            draw_rectangle(
+                button_x,
+                button_y,
+                button_width,
+                button_height,
+                DARKGRAY,
+            );
+            draw_text(
+                button_text,
+                button_x + 10.0,
+                button_y + button_height - 10.0,
+                button_font_size,
+                WHITE,
+            );
+
+            // Check for mouse click
+            if is_mouse_button_pressed(MouseButton::Left) {
+                let mouse_pos = mouse_position();
+                if mouse_pos.0 >= button_x 
+                   && mouse_pos.0 <= button_x + button_width
+                   && mouse_pos.1 >= button_y 
+                   && mouse_pos.1 <= button_y + button_height {
+                    self.restart();
+                }
+            }
         }
 
         // Draw scores
@@ -295,6 +391,14 @@ impl Game {
             }
         }
         true
+    }
+
+    fn restart(&mut self) {
+        self.board = [[None; WIDTH as usize]; HEIGHT as usize];
+        self.current_score = 0;
+        self.game_over = false;
+        self.frame_count = 0;
+        self.spawn_piece();
     }
 }
 
