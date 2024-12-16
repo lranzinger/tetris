@@ -1,21 +1,19 @@
 {
   "name": "Rust WebAssembly DevContainer",
-  "build": {
-    "dockerfile": "Dockerfile"
-  },
+  "image": "mcr.microsoft.com/devcontainers/rust:latest",
   "customizations": {
     "vscode": {
       "extensions": [
         "rust-lang.rust-analyzer",
         "esbenp.prettier-vscode",
-        "panicbit.cargo"
+        "panicbit.cargo",
+        "ritwickdey.LiveServer"
       ]
     }
   },
-  "forwardPorts": [3000], // Forward port for a local server
   "mounts": [
     "source=${localWorkspaceFolder},target=/workspace,type=bind"
   ],
   "workspaceFolder": "/workspace",
-  "remoteUser": "dev"
+  "postCreateCommand": "rustup target add wasm32-unknown-unknown && cargo install wasm-bindgen-cli"
 }
