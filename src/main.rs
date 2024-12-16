@@ -68,11 +68,35 @@ impl Game {
 
     fn get_rotated_shape(&self) -> Vec<(i32, i32)> {
         let shape = self.current_piece.shape();
+        
+        // Calculate center of piece
+        let center_x = shape.iter().map(|(x, _)| x).sum::<i32>() / shape.len() as i32;
+        let center_y = shape.iter().map(|(_, y)| y).sum::<i32>() / shape.len() as i32;
+        
+        // Apply rotation around center
         match self.rotation_state {
             0 => shape,
-            1 => shape.iter().map(|&(x, y)| (-y, x)).collect(),
-            2 => shape.iter().map(|&(x, y)| (-x, -y)).collect(),
-            3 => shape.iter().map(|&(x, y)| (y, -x)).collect(),
+            1 => shape.iter()
+                     .map(|&(x, y)| {
+                         let dx = x - center_x;
+                         let dy = y - center_y;
+                         (center_x - dy, center_y + dx)
+                     })
+                     .collect(),
+            2 => shape.iter()
+                     .map(|&(x, y)| {
+                         let dx = x - center_x;
+                         let dy = y - center_y;
+                         (center_x - dx, center_y - dy)
+                     })
+                     .collect(),
+            3 => shape.iter()
+                     .map(|&(x, y)| {
+                         let dx = x - center_x;
+                         let dy = y - center_y;
+                         (center_x + dy, center_y - dx)
+                     })
+                     .collect(),
             _ => shape,
         }
     }
