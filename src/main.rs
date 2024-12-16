@@ -218,8 +218,8 @@ impl Game {
     }
 
     fn handle_touch(&mut self, current_time: f64) {
-        let move_threshold = self.screen.block_size * 0.5;
-        let swipe_threshold = self.screen.block_size * 1.0;
+        let move_threshold = self.screen.block_size * 0.2;
+        let swipe_threshold = self.screen.block_size * 0.5;
 
         if is_mouse_button_pressed(MouseButton::Left) {
             self.touch_start = Some(mouse_position());
