@@ -42,6 +42,8 @@ struct Game {
     frame_count: i32,
     rotation_state: i32,
     game_over: bool,
+    current_score: u32,
+    high_score: u32,
 }
 
 impl Game {
@@ -53,6 +55,8 @@ impl Game {
             frame_count: 0,
             rotation_state: 0,
             game_over: false,
+            current_score: 0,
+            high_score: 0,
         };
         game.spawn_piece();
         game
@@ -125,16 +129,28 @@ impl Game {
     }
 
     fn clear_lines(&mut self) {
+        let mut new_board = [[None; WIDTH as usize]; HEIGHT as usize];
+        let mut new_row = HEIGHT as usize - 1;
+        let mut lines_cleared = 0;
+    
+        // Scan from bottom up, skip full lines
         for y in (0..HEIGHT as usize).rev() {
-            if self.board[y].iter().all(|&cell| cell.is_some()) {
-                // Move all rows above down by one
-                for row in (1..=y).rev() {
-                    self.board[row] = self.board[row - 1];
-                }
-                // Clear the top row
-                self.board[0] = [None; WIDTH as usize];
+            if !self.board[y].iter().all(|&cell| cell.is_some()) {
+                new_board[new_row] = self.board[y];
+                new_row = new_row.saturating_sub(1);
+            } else {
+                lines_cleared += 1;
             }
         }
+    
+        // Update score if lines were cleared
+        if lines_cleared > 0 {
+            let points = 100 * (1 << (lines_cleared - 1));
+            self.current_score += points;
+            self.high_score = self.high_score.max(self.current_score);
+        }
+    
+        self.board = new_board;
     }
 
     fn is_game_over(&self) -> bool {
@@ -226,6 +242,26 @@ impl Game {
                 WHITE,
             );
         }
+
+        // Draw scores
+        let score_text = format!("Score: {}", self.current_score);
+        let high_score_text = format!("High Score: {}", self.high_score);
+        
+        draw_text(
+            &score_text,
+            10.0,
+            30.0,
+            20.0,
+            WHITE,
+        );
+        
+        draw_text(
+            &high_score_text,
+            10.0,
+            60.0,
+            20.0,
+            WHITE,
+        );
     }
 
     fn try_rotation(&mut self) -> bool {
