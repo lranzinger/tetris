@@ -218,6 +218,7 @@ impl Game {
     }
 
     fn handle_touch(&mut self, current_time: f64) {
+        const HOLD_DELAY: f64 = 0.3; // 300ms delay before fast fall
         let move_threshold = self.screen.block_size * 0.2;
         let swipe_threshold = self.screen.block_size * 0.5;
 
@@ -235,7 +236,7 @@ impl Game {
                 let moved = (current_x - last_pos.0).abs() > move_threshold ||
                            (current_y - last_pos.1).abs() > move_threshold;
 
-                if !moved && current_time - self.touch_start_time.unwrap() > 0.2 {
+                if !moved && current_time - self.touch_start_time.unwrap() > HOLD_DELAY {
                     self.fall_delay = 5;
                 } else if moved && !self.touch_action_performed {
                     self.fall_delay = 20;
