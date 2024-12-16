@@ -2,7 +2,21 @@
   "name": "Rust WebAssembly DevContainer",
   "image": "mcr.microsoft.com/devcontainers/rust:latest",
   "customizations": {
-    "vscode": {
+      "vscode": {
+        "settings": {
+        "editor.formatOnPaste": true,
+        "editor.formatOnSave": true,
+        "editor.formatOnSaveMode": "file",
+        "editor.formatOnType": true,
+        "files.watcherExclude": {
+          "**/target/**": true
+        },
+        "rust-analyzer.checkOnSave.command": "clippy",
+        "rust-analyzer.checkOnSave.allTargets": false,
+        "[rust]": {
+          "editor.defaultFormatter": "rust-lang.rust-analyzer"
+        }
+      },
       "extensions": [
         "rust-lang.rust-analyzer",
         "esbenp.prettier-vscode",
