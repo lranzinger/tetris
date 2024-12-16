@@ -114,27 +114,6 @@ impl Game {
         true
     }
 
-    fn can_rotate(&self) -> bool {
-        let next_rotation = (self.rotation_state + 1) % 4;
-        let shape = self.current_piece.shape();
-        let rotated = match next_rotation {
-            1 => shape.iter().map(|&(x, y)| (-y, x)).collect::<Vec<_>>(),
-            2 => shape.iter().map(|&(x, y)| (-x, -y)).collect::<Vec<_>>(),
-            3 => shape.iter().map(|&(x, y)| (y, -x)).collect::<Vec<_>>(),
-            _ => shape,
-        };
-
-        for &(x, y) in &rotated {
-            let new_x = self.current_position.0 + x;
-            let new_y = self.current_position.1 + y;
-            if new_x < 0 || new_x >= WIDTH || new_y >= HEIGHT || 
-               (new_y >= 0 && self.board[new_y as usize][new_x as usize].is_some()) {
-                return false;
-            }
-        }
-        true
-    }
-
     fn lock_piece(&mut self) {
         for &(x, y) in &self.get_rotated_shape() {
             let board_x = self.current_position.0 + x;
@@ -195,8 +174,8 @@ impl Game {
         if is_key_pressed(KeyCode::Down) && self.can_move(0, 1) {
             self.current_position.1 += 1;
         }
-        if is_key_pressed(KeyCode::Up) && self.can_rotate() {
-            self.rotation_state = (self.rotation_state + 1) % 4;
+        if is_key_pressed(KeyCode::Up) {
+            self.try_rotation();
         }
 
         if self.is_game_over() {
@@ -247,6 +226,39 @@ impl Game {
                 WHITE,
             );
         }
+    }
+
+    fn try_rotation(&mut self) -> bool {
+        let original_x = self.current_position.0;
+        let offsets = [0, -1, 1, -2, 2]; // Check center, left, right positions
+
+        let next_rotation = (self.rotation_state + 1) % 4;
+        let temp_rotation = self.rotation_state;
+        self.rotation_state = next_rotation;
+
+        for &offset in &offsets {
+            self.current_position.0 = original_x + offset;
+            if self.is_valid_position() {
+                return true;
+            }
+        }
+
+        // If no valid position found, restore original position and rotation
+        self.current_position.0 = original_x;
+        self.rotation_state = temp_rotation;
+        false
+    }
+
+    fn is_valid_position(&self) -> bool {
+        for &(x, y) in &self.get_rotated_shape() {
+            let new_x = self.current_position.0 + x;
+            let new_y = self.current_position.1 + y;
+            if new_x < 0 || new_x >= WIDTH || new_y >= HEIGHT || 
+               (new_y >= 0 && self.board[new_y as usize][new_x as usize].is_some()) {
+                return false;
+            }
+        }
+        true
     }
 }
 
