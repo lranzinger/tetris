@@ -64,6 +64,7 @@ struct Game {
     board: Vec<Vec<u8>>,
     x: i32,
     y: i32,
+    frame_count: u32, // Add this line
 }
 
 impl Game {
@@ -73,17 +74,40 @@ impl Game {
             board: vec![vec![0; WIDTH as usize]; HEIGHT as usize],
             x: (WIDTH / 2) as i32,
             y: 0,
+            frame_count: 0,
         }
     }
 
     fn update(&mut self) {
         self.clear_screen();
         self.draw_board();
-        self.y += 1;
-        if self.y >= HEIGHT as i32 {
-            self.y = 0;
+
+        self.frame_count += 1; // Increment the frame counter
+        if self.frame_count % 20 == 0 { // Adjust the modulus to control speed
+            if self.can_move_down() {
+                self.y += 1;
+            } else {
+                // Place the block on the board
+                self.board[self.y as usize][self.x as usize] = 1;
+                // Start a new block at the top
+                self.x = (WIDTH / 2) as i32;
+                self.y = 0;
+            }
         }
+
         self.draw_block(self.x, self.y);
+    }
+
+    fn can_move_down(&self) -> bool {
+        // Check if the block is at the bottom
+        if self.y + 1 >= HEIGHT as i32 {
+            return false;
+        }
+        // Check if there is a block below
+        if self.board[(self.y + 1) as usize][self.x as usize] != 0 {
+            return false;
+        }
+        true
     }
 
     fn handle_key(&mut self, event: KeyboardEvent) {
