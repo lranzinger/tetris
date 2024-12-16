@@ -75,6 +75,10 @@ struct Game {
     last_move_time: f64,
     keys_held: Vec<KeyCode>,
     screen: ScreenConfig,
+    touch_start_time: Option<f64>,
+    touch_last_pos: Option<(f32, f32)>,
+    touch_move_threshold: f32,
+    fall_delay: i32,  // New field for controlling fall speed
 }
 
 impl Game {
@@ -92,6 +96,10 @@ impl Game {
             last_move_time: 0.0,
             keys_held: Vec::new(),
             screen: ScreenConfig::new(),
+            touch_start_time: None,
+            touch_last_pos: None,
+            touch_move_threshold: 10.0,
+            fall_delay: 20,  // Default fall delay
         };
         game.spawn_piece();
         game
@@ -207,30 +215,47 @@ impl Game {
         // Handle touch input
         if is_mouse_button_pressed(MouseButton::Left) {
             self.touch_start = Some(mouse_position());
-        } else if is_mouse_button_released(MouseButton::Left) {
-            if let Some(start_pos) = self.touch_start {
-                let (end_x, end_y) = mouse_position();
-                let dx = end_x - start_pos.0;
-                let dy = end_y - start_pos.1;
+            self.touch_start_time = Some(current_time);
+            self.touch_last_pos = Some(mouse_position());
+        } else if is_mouse_button_down(MouseButton::Left) {
+            if let (Some(start_pos), Some(last_pos)) = (self.touch_start, self.touch_last_pos) {
+                let (current_x, current_y) = mouse_position();
+                let dx = current_x - start_pos.0;
+                let dy = current_y - start_pos.1;
                 
-                // Determine swipe direction
-                if dx.abs() > dy.abs() {
-                    if dx > 30.0 && self.can_move(1, 0) {
-                        self.current_position.0 += 1;
-                    } else if dx < -30.0 && self.can_move(-1, 0) {
-                        self.current_position.0 -= 1;
+                // Check if touch is relatively stationary
+                let moved = (current_x - last_pos.0).abs() > self.touch_move_threshold ||
+                           (current_y - last_pos.1).abs() > self.touch_move_threshold;
+
+                if !moved && current_time - self.touch_start_time.unwrap() > 0.1 {
+                    // Speed up falling when touch is held
+                    self.fall_delay = 5;  // Faster falling when touch held
+                } else if moved {
+                    // Handle swipe logic
+                    self.fall_delay = 20;  // Normal falling speed
+                    if dx.abs() > dy.abs() {
+                        if dx > 30.0 && self.can_move(1, 0) {
+                            self.current_position.0 += 1;
+                        } else if dx < -30.0 && self.can_move(-1, 0) {
+                            self.current_position.0 -= 1;
+                        }
+                    } else if dy > 30.0 && self.can_move(0, 1) {
+                        self.current_position.1 += 1;
+                    } else if dy < -30.0 {
+                        self.try_rotation();
                     }
-                } else if dy > 30.0 && self.can_move(0, 1) {
-                    self.current_position.1 += 1;
-                } else if dy < -30.0 {
-                    self.try_rotation();
                 }
+                self.touch_last_pos = Some((current_x, current_y));
             }
+        } else if is_mouse_button_released(MouseButton::Left) {
             self.touch_start = None;
+            self.touch_start_time = None;
+            self.touch_last_pos = None;
+            self.fall_delay = 20;  // Reset to normal speed
         }
 
         // Handle keyboard input with holding
-        for key in [KeyCode::Left, KeyCode::Right, KeyCode::Down] {
+        for key in [KeyCode::Left, KeyCode::Right] {
             if is_key_pressed(key) {
                 self.keys_held.push(key);
                 self.last_move_time = current_time;
@@ -246,10 +271,16 @@ impl Game {
             }
             self.last_move_time = current_time;
         }
+        if is_key_pressed(KeyCode::Down){
+            self.fall_delay = 5;
+        }
 
         // Remove released keys
         self.keys_held.retain(|&key| is_key_down(key));
 
+        if is_key_released(KeyCode::Down){
+            self.fall_delay = 20;
+        }
         // Handle rotation (no holding)
         if is_key_pressed(KeyCode::Up) {
             self.try_rotation();
@@ -264,9 +295,6 @@ impl Game {
             KeyCode::Right => if self.can_move(1, 0) {
                 self.current_position.0 += 1;
             },
-            KeyCode::Down => if self.can_move(0, 1) {
-                self.current_position.1 += 1;
-            },
             _ => {}
         }
     }
@@ -279,7 +307,7 @@ impl Game {
         self.handle_input();
 
         self.frame_count += 1;
-        if self.frame_count % 20 == 0 {
+        if self.frame_count % self.fall_delay == 0 {
             if self.can_move(0, 1) {
                 self.current_position.1 += 1;
             } else {
