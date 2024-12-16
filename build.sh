@@ -5,4 +5,4 @@ cargo build --target wasm32-unknown-unknown
 
 mkdir -p /workspace/pkg
 
-cp /workspace/target/wasm32-unknown-unknown/debug/tetris.wasm /workspace/pkg/
+cp /workspace/target/wasm32-unknown-unknown/debug/tetris.wasm /workspace/
