@@ -41,6 +41,7 @@ struct Game {
     current_position: (i32, i32),
     frame_count: i32,
     rotation_state: i32,
+    game_over: bool,
 }
 
 impl Game {
@@ -51,6 +52,7 @@ impl Game {
             current_position: (WIDTH / 2 - 2, 0),
             frame_count: 0,
             rotation_state: 0,
+            game_over: false,
         };
         game.spawn_piece();
         game
@@ -156,7 +158,23 @@ impl Game {
         }
     }
 
+    fn is_game_over(&self) -> bool {
+        // Check if new piece overlaps with existing pieces
+        for &(x, y) in &self.get_rotated_shape() {
+            let board_x = self.current_position.0 + x;
+            let board_y = self.current_position.1 + y;
+            if board_y >= 0 && self.board[board_y as usize][board_x as usize].is_some() {
+                return true;
+            }
+        }
+        false
+    }
+
     fn update(&mut self) {
+        if self.game_over {
+            return;
+        }
+
         self.frame_count += 1;
         if self.frame_count % 20 == 0 {
             if self.can_move(0, 1) {
@@ -179,6 +197,10 @@ impl Game {
         }
         if is_key_pressed(KeyCode::Up) && self.can_rotate() {
             self.rotation_state = (self.rotation_state + 1) % 4;
+        }
+
+        if self.is_game_over() {
+            self.game_over = true;
         }
     }
 
@@ -211,6 +233,19 @@ impl Game {
                     self.current_piece.color(),
                 );
             }
+        }
+
+        if self.game_over {
+            let text = "Game Over!";
+            let font_size = 30.0;
+            let text_dims = measure_text(text, None, font_size as u16, 1.0);
+            draw_text(
+                text,
+                screen_width() / 2.0 - text_dims.width / 2.0,
+                screen_height() / 2.0,
+                font_size,
+                WHITE,
+            );
         }
     }
 }
