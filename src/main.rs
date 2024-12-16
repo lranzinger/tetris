@@ -40,6 +40,7 @@ struct Game {
     current_piece: Tetromino,
     current_position: (i32, i32),
     frame_count: i32,
+    rotation_state: i32,
 }
 
 impl Game {
@@ -49,6 +50,7 @@ impl Game {
             current_piece: Tetromino::I,
             current_position: (WIDTH / 2 - 2, 0),
             frame_count: 0,
+            rotation_state: 0,
         };
         game.spawn_piece();
         game
@@ -61,10 +63,22 @@ impl Game {
         ];
         self.current_piece = pieces[rand::gen_range(0, pieces.len())];
         self.current_position = (WIDTH / 2 - 2, 0);
+        self.rotation_state = 0;  // Reset rotation state
+    }
+
+    fn get_rotated_shape(&self) -> Vec<(i32, i32)> {
+        let shape = self.current_piece.shape();
+        match self.rotation_state {
+            0 => shape,
+            1 => shape.iter().map(|&(x, y)| (-y, x)).collect(),
+            2 => shape.iter().map(|&(x, y)| (-x, -y)).collect(),
+            3 => shape.iter().map(|&(x, y)| (y, -x)).collect(),
+            _ => shape,
+        }
     }
 
     fn can_move(&self, dx: i32, dy: i32) -> bool {
-        for &(x, y) in &self.current_piece.shape() {
+        for &(x, y) in &self.get_rotated_shape() {
             let new_x = self.current_position.0 + x + dx;
             let new_y = self.current_position.1 + y + dy;
             if new_x < 0 || new_x >= WIDTH || new_y >= HEIGHT || (new_y >= 0 && self.board[new_y as usize][new_x as usize].is_some()) {
@@ -74,12 +88,46 @@ impl Game {
         true
     }
 
+    fn can_rotate(&self) -> bool {
+        let next_rotation = (self.rotation_state + 1) % 4;
+        let shape = self.current_piece.shape();
+        let rotated = match next_rotation {
+            1 => shape.iter().map(|&(x, y)| (-y, x)).collect::<Vec<_>>(),
+            2 => shape.iter().map(|&(x, y)| (-x, -y)).collect::<Vec<_>>(),
+            3 => shape.iter().map(|&(x, y)| (y, -x)).collect::<Vec<_>>(),
+            _ => shape,
+        };
+
+        for &(x, y) in &rotated {
+            let new_x = self.current_position.0 + x;
+            let new_y = self.current_position.1 + y;
+            if new_x < 0 || new_x >= WIDTH || new_y >= HEIGHT || 
+               (new_y >= 0 && self.board[new_y as usize][new_x as usize].is_some()) {
+                return false;
+            }
+        }
+        true
+    }
+
     fn lock_piece(&mut self) {
-        for &(x, y) in &self.current_piece.shape() {
+        for &(x, y) in &self.get_rotated_shape() {
             let board_x = self.current_position.0 + x;
             let board_y = self.current_position.1 + y;
             if board_y >= 0 {
                 self.board[board_y as usize][board_x as usize] = Some(self.current_piece.color());
+            }
+        }
+    }
+
+    fn clear_lines(&mut self) {
+        for y in (0..HEIGHT as usize).rev() {
+            if self.board[y].iter().all(|&cell| cell.is_some()) {
+                // Move all rows above down by one
+                for row in (1..=y).rev() {
+                    self.board[row] = self.board[row - 1];
+                }
+                // Clear the top row
+                self.board[0] = [None; WIDTH as usize];
             }
         }
     }
@@ -91,6 +139,7 @@ impl Game {
                 self.current_position.1 += 1;
             } else {
                 self.lock_piece();
+                self.clear_lines();
                 self.spawn_piece();
             }
         }
@@ -103,6 +152,9 @@ impl Game {
         }
         if is_key_pressed(KeyCode::Down) && self.can_move(0, 1) {
             self.current_position.1 += 1;
+        }
+        if is_key_pressed(KeyCode::Up) && self.can_rotate() {
+            self.rotation_state = (self.rotation_state + 1) % 4;
         }
     }
 
@@ -123,7 +175,7 @@ impl Game {
             }
         }
 
-        for &(x, y) in &self.current_piece.shape() {
+        for &(x, y) in &self.get_rotated_shape() {
             let draw_x = self.current_position.0 + x;
             let draw_y = self.current_position.1 + y;
             if draw_y >= 0 {
