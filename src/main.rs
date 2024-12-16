@@ -78,7 +78,7 @@ struct Game {
     touch_start_time: Option<f64>,
     touch_last_pos: Option<(f32, f32)>,
     touch_move_threshold: f32,
-    fall_delay: i32,  // New field for controlling fall speed
+    fall_delay: i32,
 }
 
 impl Game {
@@ -323,21 +323,54 @@ impl Game {
     }
 
     fn draw_block(&self, x: f32, y: f32, color: Color) {
+        let pos_x = self.screen.offset_x + x * self.screen.block_size;
+        let pos_y = self.screen.offset_y + y * self.screen.block_size;
+        let size = self.screen.block_size;
+        
+        // Draw main block with slight gradient
+        let darker = Color::new(
+            color.r * 0.8,
+            color.g * 0.8,
+            color.b * 0.8,
+            1.0
+        );
+        
+        // Draw block face
         draw_rectangle(
-            self.screen.offset_x + x * self.screen.block_size,
-            self.screen.offset_y + y * self.screen.block_size,
-            self.screen.block_size,
-            self.screen.block_size,
+            pos_x,
+            pos_y,
+            size,
+            size,
             color
         );
         
+        // Draw inner shading for 3D effect
+        draw_rectangle(
+            pos_x + size * 0.1,
+            pos_y + size * 0.1,
+            size * 0.8,
+            size * 0.8,
+            darker
+        );
+        
+        // Draw smooth outline
         draw_rectangle_lines(
-            self.screen.offset_x + x * self.screen.block_size,
-            self.screen.offset_y + y * self.screen.block_size,
-            self.screen.block_size,
-            self.screen.block_size,
-            2.0,
-            Color::new(color.r * 0.7, color.g * 0.7, color.b * 0.7, 1.0)
+            pos_x,
+            pos_y,
+            size,
+            size,
+            size * 0.1,  // Thicker lines
+            Color::new(0.0, 0.0, 0.0, 0.5)  // Semi-transparent black
+        );
+        
+        // Draw highlight
+        draw_line(
+            pos_x + size * 0.1,
+            pos_y + size * 0.1,
+            pos_x + size * 0.9,
+            pos_y + size * 0.1,
+            size * 0.05,
+            Color::new(1.0, 1.0, 1.0, 0.3)
         );
     }
 
