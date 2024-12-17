@@ -100,8 +100,7 @@ impl Game {
         for &(x, y) in &self.state.rotated_piece {
             let new_x = self.state.current_position.0 + x + dx;
             let new_y = self.state.current_position.1 + y + dy;
-            if new_x < 0
-                || new_x >= WIDTH
+            if !(0..WIDTH).contains(&new_x)
                 || new_y >= HEIGHT
                 || (new_y >= 0 && self.state.cells[new_y as usize][new_x as usize].is_some())
             {
