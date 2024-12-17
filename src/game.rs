@@ -220,11 +220,13 @@ impl Game {
     }
     fn try_rotation(&mut self) -> bool {
         let original_x = self.state.current_position.0;
-        let offsets = [0, -1, 1, -2, 2]; // Check center, left, right positions
+
+        let offsets = [0, -1, 1, -2, 2];
 
         let next_rotation = (self.state.rotation_state + 1) % 4;
         let temp_rotation = self.state.rotation_state;
         self.state.rotation_state = next_rotation;
+        self.state.rotated_piece = self.get_rotated_shape();
 
         for &offset in &offsets {
             self.state.current_position.0 = original_x + offset;
@@ -233,9 +235,10 @@ impl Game {
             }
         }
 
-        // If no valid position found, restore original position and rotation
+        // Restore original position and rotation if no valid position found
         self.state.current_position.0 = original_x;
         self.state.rotation_state = temp_rotation;
+        self.state.rotated_piece = self.get_rotated_shape();
         false
     }
 
