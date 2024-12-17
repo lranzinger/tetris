@@ -1,5 +1,5 @@
 use crate::{
-    input::{self, InputState},
+    input::{InputHandler, InputState},
     renderer::Renderer,
     tetromino::Tetromino,
 };
@@ -41,12 +41,14 @@ impl GameState {
 pub struct Game {
     pub state: GameState,
     pub renderer: Renderer,
+    pub input: InputHandler,
 }
 impl Game {
     pub fn new() -> Self {
         Self {
             state: GameState::new(),
             renderer: Renderer::new(),
+            input: InputHandler::new(),
         }
     }
 
@@ -171,7 +173,7 @@ impl Game {
             return;
         }
 
-        let input_state = input::update();
+        let input_state = self.input.update();
         self.handle_input(input_state);
 
         self.state.rotated_piece = self.get_rotated_shape();
