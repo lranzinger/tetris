@@ -8,7 +8,14 @@ use macroquad::prelude::*;
 pub const WIDTH: i32 = 10;
 pub const HEIGHT: i32 = 20;
 
+pub enum GameStatus {
+    Start,
+    Playing,
+    GameOver,
+}
+
 pub struct GameState {
+    pub status: GameStatus,
     pub cells: [[Option<Color>; WIDTH as usize]; HEIGHT as usize],
     pub current_score: u32,
     pub high_score: u32,
@@ -24,6 +31,7 @@ pub struct GameState {
 impl GameState {
     pub fn new() -> Self {
         Self {
+            status: GameStatus::Start,
             cells: [[None; WIDTH as usize]; HEIGHT as usize],
             current_score: 0,
             high_score: 0,
@@ -160,13 +168,23 @@ impl Game {
     }
 
     pub fn update(&mut self) {
-        if self.state.game_over {
-            if self.renderer.check_restart_click() {
-                self.restart();
+        match self.state.status {
+            GameStatus::Start => {
+                if self.renderer.check_click(GameStatus::Start) {
+                    self.state.status = GameStatus::Playing;
+                }
             }
-            return;
+            GameStatus::Playing => self.update_gameplay(),
+            GameStatus::GameOver => {
+                if self.renderer.check_click(GameStatus::GameOver) {
+                    self.restart();
+                    self.state.status = GameStatus::Playing;
+                }
+            }
         }
+    }
 
+    fn update_gameplay(&mut self) {
         let input_state = self.input.update();
         self.handle_input(input_state);
 
@@ -184,7 +202,7 @@ impl Game {
         }
 
         if self.is_game_over() {
-            self.state.game_over = true;
+            self.state.status = GameStatus::GameOver;
         }
     }
 
@@ -209,6 +227,7 @@ impl Game {
             InputState::None => self.state.fall_delay = 20,
         }
     }
+
     fn try_rotation(&mut self) -> bool {
         let original_x = self.state.current_position.0;
 

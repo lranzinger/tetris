@@ -1,13 +1,15 @@
 use crate::{
-    game::{GameState, HEIGHT, WIDTH},
+    game::{GameState, GameStatus, HEIGHT, WIDTH},
     screen::ScreenConfig,
 };
 use macroquad::prelude::*;
 
 const FONT_SIZE: f32 = 40.0;
 const BUTTON_FONT_SIZE: f32 = 30.0;
-const BUTTON_TEXT: &str = "Click to Restart";
+const START_TEXT: &str = "Tetris";
+const START_BUTTON: &str = "Start";
 const GAMEOVER_TEXT: &str = "Game Over!";
+const GAMEOVER_BUTTON: &str = "Neu starten";
 const SCORE_TEXT: &str = "Score: ";
 const HIGHSCORE_TEXT: &str = "Highscore: ";
 
@@ -34,22 +36,22 @@ impl Renderer {
     }
 
     pub fn draw(&mut self, state: &GameState) {
-        clear_background(BLACK);
-
         // Update screen config each frame for dynamic resizing
         self.screen = ScreenConfig::new();
 
-        //Draw game
         self.draw_game_field();
         self.draw_placed_pieces(state);
-        self.draw_current_piece(state);
-        self.draw_scores(state.current_score, state.high_score);
+
+        match state.status {
+            GameStatus::Start => self.draw_start_screen(),
+            GameStatus::Playing => {
+                self.draw_current_piece(state);
+                self.draw_scores(state.current_score, state.high_score);
+            }
+            GameStatus::GameOver => self.draw_game_over(state.current_score, state.high_score),
+        }
 
         self.draw_debug_info();
-
-        if state.game_over {
-            self.draw_game_over();
-        }
     }
 
     fn draw_block(&self, x: f32, y: f32, color: Color) {
@@ -93,8 +95,8 @@ impl Renderer {
         );
     }
 
-    fn get_restart_button_bounds(&self) -> ButtonBounds {
-        let button_dims = measure_text(BUTTON_TEXT, None, BUTTON_FONT_SIZE as u16, 1.0);
+    fn get_button_bounds(&self, button_text: &str) -> ButtonBounds {
+        let button_dims = measure_text(button_text, None, BUTTON_FONT_SIZE as u16, 1.0);
 
         ButtonBounds {
             x: screen_width() / 2.0 - button_dims.width / 2.0 - 10.0,
@@ -104,21 +106,51 @@ impl Renderer {
         }
     }
 
-    fn draw_game_over(&mut self) {
-        let text_dims = measure_text(GAMEOVER_TEXT, None, FONT_SIZE as u16, 1.0);
+    fn draw_start_screen(&mut self) {
+        self.draw_overlay_screen(START_TEXT, START_BUTTON);
+    }
+
+    fn draw_game_over(&mut self, score: u32, high_score: u32) {
+        self.draw_overlay_screen(GAMEOVER_TEXT, GAMEOVER_BUTTON);
+
+        let score_text = format!("{} {}", SCORE_TEXT, score);
+        let text_dims = measure_text(&score_text, None, FONT_SIZE as u16, 1.0);
         draw_text(
-            GAMEOVER_TEXT,
+            &score_text,
+            screen_width() / 2.0 - text_dims.width / 2.0,
+            screen_height() / 2.0 + 130.0,
+            FONT_SIZE - 5.0,
+            WHITE,
+        );
+
+        let highscore_text = format!("{} {}", HIGHSCORE_TEXT, high_score);
+        let text_dims = measure_text(&highscore_text, None, FONT_SIZE as u16, 1.0);
+        draw_text(
+            &highscore_text,
+            screen_width() / 2.0 - text_dims.width / 2.0,
+            screen_height() / 2.0 + 170.0,
+            FONT_SIZE - 5.0,
+            WHITE,
+        );
+    }
+    fn draw_overlay_screen(&mut self, title: &str, button_text: &str) {
+        let overlay_color = Color::new(0.0, 0.0, 0.0, 0.7);
+        draw_rectangle(0.0, 0.0, screen_width(), screen_height(), overlay_color);
+
+        let text_dims = measure_text(title, None, FONT_SIZE as u16, 1.0);
+        draw_text(
+            title,
             screen_width() / 2.0 - text_dims.width / 2.0,
             screen_height() / 2.0,
             FONT_SIZE,
             WHITE,
         );
 
-        let button = self.get_restart_button_bounds();
+        let button = self.get_button_bounds(button_text);
 
         draw_rectangle(button.x, button.y, button.width, button.height, DARKGRAY);
         draw_text(
-            BUTTON_TEXT,
+            button_text,
             button.x + 10.0,
             button.y + button.height - 10.0,
             BUTTON_FONT_SIZE,
@@ -126,13 +158,18 @@ impl Renderer {
         );
     }
 
-    pub fn check_restart_click(&self) -> bool {
+    pub fn check_click(&self, status: GameStatus) -> bool {
         if !is_mouse_button_pressed(MouseButton::Left) {
             return false;
         }
 
+        let button_text = match status {
+            GameStatus::Start => START_BUTTON,
+            GameStatus::GameOver => GAMEOVER_BUTTON,
+            _ => return false,
+        };
         let (mouse_x, mouse_y) = mouse_position();
-        let button = self.get_restart_button_bounds();
+        let button = self.get_button_bounds(button_text);
 
         mouse_x >= button.x
             && mouse_x <= button.x + button.width
