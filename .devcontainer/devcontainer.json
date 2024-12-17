@@ -29,5 +29,5 @@
     "source=${localWorkspaceFolder},target=/workspace,type=bind"
   ],
   "workspaceFolder": "/workspace",
-  "postCreateCommand": "rustup target add wasm32-unknown-unknown && cargo install wasm-bindgen-cli"
+  "postCreateCommand": "rustup target add wasm32-unknown-unknown"
 }
