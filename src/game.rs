@@ -120,6 +120,7 @@ impl Game {
                     Some(self.state.current_piece.color());
             }
         }
+        self.input.reset();
     }
 
     fn clear_lines(&mut self) {

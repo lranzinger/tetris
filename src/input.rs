@@ -93,7 +93,7 @@ impl InputHandler {
     fn handle_touch(&mut self) -> InputState {
         let current_time = get_time();
         const MOVE_THRESHOLD: f32 = 15.0;
-        const SWIPE_THRESHOLD: f32 = 40.0;
+        const SWIPE_THRESHOLD: f32 = 30.0;
         const HOLD_THRESHOLD: f64 = 0.2;
         const SWIPE_COOLDOWN: f64 = 0.3; // 300ms cooldown
 
@@ -141,5 +141,13 @@ impl InputHandler {
             self.swipe_performed = false;
         }
         InputState::None
+    }
+
+    pub fn reset(&mut self) {
+        self.key_hold_start = None;
+        self.swipe_performed = false;
+        self.touch_start = None;
+        self.touch_start_time = None;
+        self.touch_last_pos = None;
     }
 }
