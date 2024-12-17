@@ -1,4 +1,5 @@
 use macroquad::prelude::*;
+use rand::gen_range;
 
 #[derive(Clone, Copy)]
 pub enum Tetromino {
@@ -34,5 +35,18 @@ impl Tetromino {
             Tetromino::J => ORANGE,
             Tetromino::L => PINK,
         }
+    }
+
+    pub fn random() -> Self {
+        const PIECES: [Tetromino; 7] = [
+            Tetromino::I,
+            Tetromino::O,
+            Tetromino::T,
+            Tetromino::S,
+            Tetromino::Z,
+            Tetromino::J,
+            Tetromino::L,
+        ];
+        PIECES[gen_range(0, PIECES.len())]
     }
 }

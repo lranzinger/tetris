@@ -6,6 +6,7 @@ mod tetromino;
 
 use game::Game;
 use macroquad::prelude::*;
+use miniquad::date;
 
 fn window_conf() -> Conf {
     Conf {
@@ -18,8 +19,10 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    let mut game = Game::new();
+    // Set seed for random generator
+    rand::srand(date::now() as u64);
 
+    let mut game = Game::new();
     loop {
         game.update();
         game.renderer.draw(&game.state);

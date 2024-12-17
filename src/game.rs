@@ -27,7 +27,7 @@ impl GameState {
             cells: [[None; WIDTH as usize]; HEIGHT as usize],
             current_score: 0,
             high_score: 0,
-            current_piece: Tetromino::I,
+            current_piece: Tetromino::random(),
             rotated_piece: vec![(0, 0)],
             current_position: (WIDTH / 2 - 2, 0),
             frame_count: 0,
@@ -53,16 +53,7 @@ impl Game {
     }
 
     fn spawn_piece(&mut self) {
-        let pieces = [
-            Tetromino::I,
-            Tetromino::O,
-            Tetromino::T,
-            Tetromino::S,
-            Tetromino::Z,
-            Tetromino::J,
-            Tetromino::L,
-        ];
-        self.state.current_piece = pieces[rand::gen_range(0, pieces.len())];
+        self.state.current_piece = Tetromino::random();
         self.state.current_position = (WIDTH / 2 - 2, 0);
         self.state.rotation_state = 0; // Reset rotation state
     }
