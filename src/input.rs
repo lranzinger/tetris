@@ -94,8 +94,8 @@ impl InputHandler {
         let current_time = get_time();
         const MOVE_THRESHOLD: f32 = 15.0;
         const SWIPE_THRESHOLD: f32 = 30.0;
-        const HOLD_THRESHOLD: f64 = 0.2;
-        const SWIPE_COOLDOWN: f64 = 0.3; // 300ms cooldown
+        const HOLD_THRESHOLD: f64 = 0.1;
+        const SWIPE_COOLDOWN: f64 = 0.2; // in s
 
         if is_mouse_button_pressed(MouseButton::Left) {
             self.touch_start = Some(mouse_position());
