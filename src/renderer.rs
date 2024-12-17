@@ -4,6 +4,20 @@ use crate::{
 };
 use macroquad::prelude::*;
 
+const FONT_SIZE: f32 = 40.0;
+const BUTTON_FONT_SIZE: f32 = 30.0;
+const BUTTON_TEXT: &str = "Click to Restart";
+const GAMEOVER_TEXT: &str = "Game Over!";
+const SCORE_TEXT: &str = "Score: ";
+const HIGHSCORE_TEXT: &str = "Highscore: ";
+
+struct ButtonBounds {
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
+}
+
 pub struct Renderer {
     pub screen: ScreenConfig,
 }
@@ -73,43 +87,56 @@ impl Renderer {
         );
     }
 
-    fn draw_game_over(&mut self) {
-        let text = "Game Over!";
-        let button_text = "Click to Restart";
-        const FONT_SIZE: f32 = 40.0;
-        const BUTTON_FONT_SIZE: f32 = 30.0;
+    fn get_restart_button_bounds(&self) -> ButtonBounds {
+        let button_dims = measure_text(BUTTON_TEXT, None, BUTTON_FONT_SIZE as u16, 1.0);
 
-        // Draw game over text
-        let text_dims = measure_text(text, None, FONT_SIZE as u16, 1.0);
+        ButtonBounds {
+            x: screen_width() / 2.0 - button_dims.width / 2.0 - 10.0,
+            y: screen_height() / 2.0 + 30.0,
+            width: button_dims.width + 20.0,
+            height: button_dims.height + 20.0,
+        }
+    }
+
+    fn draw_game_over(&mut self) {
+        let text_dims = measure_text(GAMEOVER_TEXT, None, FONT_SIZE as u16, 1.0);
         draw_text(
-            text,
+            GAMEOVER_TEXT,
             screen_width() / 2.0 - text_dims.width / 2.0,
             screen_height() / 2.0,
             FONT_SIZE,
             WHITE,
         );
 
-        // Draw restart button
-        let button_dims = measure_text(button_text, None, BUTTON_FONT_SIZE as u16, 1.0);
-        let button_x = screen_width() / 2.0 - button_dims.width / 2.0 - 10.0;
-        let button_y = screen_height() / 2.0 + 30.0;
-        let button_width = button_dims.width + 20.0;
-        let button_height = button_dims.height + 20.0;
+        let button = self.get_restart_button_bounds();
 
-        draw_rectangle(button_x, button_y, button_width, button_height, DARKGRAY);
+        draw_rectangle(button.x, button.y, button.width, button.height, DARKGRAY);
         draw_text(
-            button_text,
-            button_x + 10.0,
-            button_y + button_height - 10.0,
+            BUTTON_TEXT,
+            button.x + 10.0,
+            button.y + button.height - 10.0,
             BUTTON_FONT_SIZE,
             WHITE,
         );
     }
 
+    pub fn check_restart_click(&self) -> bool {
+        if !is_mouse_button_pressed(MouseButton::Left) {
+            return false;
+        }
+
+        let (mouse_x, mouse_y) = mouse_position();
+        let button = self.get_restart_button_bounds();
+
+        mouse_x >= button.x
+            && mouse_x <= button.x + button.width
+            && mouse_y >= button.y
+            && mouse_y <= button.y + button.height
+    }
+
     fn draw_scores(&self, current_score: u32, high_score: u32) {
-        const FONT_SIZE: f32 = 30.0;
-        let score_text = format!("Score: {}", current_score);
-        let high_score_text = format!("High Score: {}", high_score);
+        let score_text = format!("{} {}", SCORE_TEXT, current_score);
+        let high_score_text = format!("{} {}", HIGHSCORE_TEXT, high_score);
 
         draw_text(&score_text, 10.0, 30.0, FONT_SIZE, WHITE);
         draw_text(&high_score_text, 10.0, 60.0, FONT_SIZE, WHITE);

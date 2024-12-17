@@ -170,6 +170,9 @@ impl Game {
 
     pub fn update(&mut self) {
         if self.state.game_over {
+            if self.renderer.check_restart_click() {
+                self.restart();
+            }
             return;
         }
 
