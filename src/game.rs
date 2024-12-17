@@ -1,4 +1,5 @@
 use crate::{
+    dummy::DummyBoard,
     input::{InputHandler, InputState},
     renderer::Renderer,
     tetromino::Tetromino,
@@ -17,6 +18,7 @@ pub enum GameStatus {
 pub struct GameState {
     pub status: GameStatus,
     pub cells: [[Option<Color>; WIDTH as usize]; HEIGHT as usize],
+    pub dummy_board: DummyBoard,
     pub current_score: u32,
     pub high_score: u32,
     pub current_piece: Tetromino,
@@ -33,6 +35,7 @@ impl GameState {
         Self {
             status: GameStatus::Start,
             cells: [[None; WIDTH as usize]; HEIGHT as usize],
+            dummy_board: DummyBoard::new(),
             current_score: 0,
             high_score: 0,
             current_piece: Tetromino::random(),

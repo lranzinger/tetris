@@ -1,3 +1,4 @@
+mod dummy;
 mod game;
 mod input;
 mod renderer;

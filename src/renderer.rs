@@ -40,15 +40,21 @@ impl Renderer {
         self.screen = ScreenConfig::new();
 
         self.draw_game_field();
-        self.draw_placed_pieces(state);
 
         match state.status {
-            GameStatus::Start => self.draw_start_screen(),
+            GameStatus::Start => {
+                self.draw_placed_pieces(&state.dummy_board.cells);
+                self.draw_start_screen();
+            }
             GameStatus::Playing => {
+                self.draw_placed_pieces(&state.cells);
                 self.draw_current_piece(state);
                 self.draw_scores(state.current_score, state.high_score);
             }
-            GameStatus::GameOver => self.draw_game_over(state.current_score, state.high_score),
+            GameStatus::GameOver => {
+                self.draw_placed_pieces(&state.cells);
+                self.draw_game_over(state.current_score, state.high_score);
+            }
         }
 
         self.draw_debug_info();
@@ -223,11 +229,11 @@ impl Renderer {
         }
     }
 
-    fn draw_placed_pieces(&self, state: &GameState) {
+    fn draw_placed_pieces(&self, cells: &[[Option<Color>; WIDTH as usize]; HEIGHT as usize]) {
         // Draw placed pieces
         for y in 0..HEIGHT {
             for x in 0..WIDTH {
-                if let Some(color) = state.cells[y as usize][x as usize] {
+                if let Some(color) = cells[y as usize][x as usize] {
                     self.draw_block(x as f32, y as f32, color);
                 }
             }
