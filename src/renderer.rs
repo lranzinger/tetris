@@ -15,6 +15,23 @@ impl Renderer {
         }
     }
 
+    pub fn draw(&mut self, state: &GameState) {
+        clear_background(BLACK);
+
+        // Update screen config each frame for dynamic resizing
+        self.screen = ScreenConfig::new();
+
+        //Draw game
+        self.draw_game_field();
+        self.draw_placed_pieces(state);
+        self.draw_current_piece(state);
+        self.draw_scores(state.current_score, state.high_score);
+
+        if state.game_over {
+            self.draw_game_over();
+        }
+    }
+
     fn draw_block(&self, x: f32, y: f32, color: Color) {
         let pos_x = self.screen.offset_x + x * self.screen.block_size;
         let pos_y = self.screen.offset_y + y * self.screen.block_size;
@@ -56,13 +73,49 @@ impl Renderer {
         );
     }
 
-    pub fn draw(&mut self, state: &GameState) {
-        clear_background(BLACK);
+    fn draw_game_over(&mut self) {
+        let text = "Game Over!";
+        let button_text = "Click to Restart";
+        const FONT_SIZE: f32 = 40.0;
+        const BUTTON_FONT_SIZE: f32 = 30.0;
 
-        // Update screen config each frame for dynamic resizing
-        self.screen = ScreenConfig::new();
+        // Draw game over text
+        let text_dims = measure_text(text, None, FONT_SIZE as u16, 1.0);
+        draw_text(
+            text,
+            screen_width() / 2.0 - text_dims.width / 2.0,
+            screen_height() / 2.0,
+            FONT_SIZE,
+            WHITE,
+        );
 
-        // Draw game field
+        // Draw restart button
+        let button_dims = measure_text(button_text, None, BUTTON_FONT_SIZE as u16, 1.0);
+        let button_x = screen_width() / 2.0 - button_dims.width / 2.0 - 10.0;
+        let button_y = screen_height() / 2.0 + 30.0;
+        let button_width = button_dims.width + 20.0;
+        let button_height = button_dims.height + 20.0;
+
+        draw_rectangle(button_x, button_y, button_width, button_height, DARKGRAY);
+        draw_text(
+            button_text,
+            button_x + 10.0,
+            button_y + button_height - 10.0,
+            BUTTON_FONT_SIZE,
+            WHITE,
+        );
+    }
+
+    fn draw_scores(&self, current_score: u32, high_score: u32) {
+        const FONT_SIZE: f32 = 30.0;
+        let score_text = format!("Score: {}", current_score);
+        let high_score_text = format!("High Score: {}", high_score);
+
+        draw_text(&score_text, 10.0, 30.0, FONT_SIZE, WHITE);
+        draw_text(&high_score_text, 10.0, 60.0, FONT_SIZE, WHITE);
+    }
+
+    fn draw_game_field(&self) {
         let field_width = WIDTH as f32 * self.screen.block_size;
         let field_height = HEIGHT as f32 * self.screen.block_size;
 
@@ -98,8 +151,10 @@ impl Renderer {
                 DARKGRAY,
             );
         }
+    }
 
-        // Draw placed pieces with outline
+    fn draw_placed_pieces(&self, state: &GameState) {
+        // Draw placed pieces
         for y in 0..HEIGHT {
             for x in 0..WIDTH {
                 if let Some(color) = state.cells[y as usize][x as usize] {
@@ -107,8 +162,9 @@ impl Renderer {
                 }
             }
         }
+    }
 
-        // Draw current piece with outline
+    fn draw_current_piece(&self, state: &GameState) {
         for &(x, y) in &state.rotated_piece {
             let draw_x = state.current_position.0 + x;
             let draw_y = state.current_position.1 + y;
@@ -116,57 +172,5 @@ impl Renderer {
                 self.draw_block(draw_x as f32, draw_y as f32, state.current_piece.color());
             }
         }
-    }
-
-    fn draw_game_over() {
-        let text = "Game Over!";
-        let button_text = "Click to Restart";
-        let font_size = 30.0;
-        let button_font_size = 20.0;
-
-        // Draw game over text
-        let text_dims = measure_text(text, None, font_size as u16, 1.0);
-        draw_text(
-            text,
-            screen_width() / 2.0 - text_dims.width / 2.0,
-            screen_height() / 2.0,
-            font_size,
-            WHITE,
-        );
-
-        // Draw restart button
-        let button_dims = measure_text(button_text, None, button_font_size as u16, 1.0);
-        let button_x = screen_width() / 2.0 - button_dims.width / 2.0 - 10.0;
-        let button_y = screen_height() / 2.0 + 30.0;
-        let button_width = button_dims.width + 20.0;
-        let button_height = button_dims.height + 20.0;
-
-        draw_rectangle(button_x, button_y, button_width, button_height, DARKGRAY);
-        draw_text(
-            button_text,
-            button_x + 10.0,
-            button_y + button_height - 10.0,
-            button_font_size,
-            WHITE,
-        );
-
-        // // Check for mouse click
-        // if is_mouse_button_pressed(MouseButton::Left) {
-        //     let mouse_pos = mouse_position();
-        //     if mouse_pos.0 >= button_x
-        //         && mouse_pos.0 <= button_x + button_width
-        //         && mouse_pos.1 >= button_y
-        //         && mouse_pos.1 <= button_y + button_height
-        //     {
-        //         self.restart();
-        //     }
-    }
-
-    fn draw_scores(&self, current_score: u32, high_score: u32) {
-        let score_text = format!("Score: {}", current_score);
-        let high_score_text = format!("High Score: {}", high_score);
-
-        draw_text(&score_text, 10.0, 30.0, 20.0, WHITE);
-        draw_text(&high_score_text, 10.0, 60.0, 20.0, WHITE);
     }
 }
