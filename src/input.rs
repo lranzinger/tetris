@@ -15,6 +15,8 @@ pub struct InputHandler {
     touch_last_pos: Option<(f32, f32)>,
     last_swipe_time: f64,
     swipe_performed: bool,
+    key_hold_start: Option<(KeyCode, f64)>,
+    last_move_time: f64,
 }
 
 impl InputHandler {
@@ -25,6 +27,8 @@ impl InputHandler {
             touch_last_pos: None,
             last_swipe_time: 0.0,
             swipe_performed: false,
+            key_hold_start: None,
+            last_move_time: 0.0,
         }
     }
 
@@ -43,16 +47,43 @@ impl InputHandler {
     }
 
     fn handle_keyboard(&mut self) -> InputState {
-        // Handle keyboard input with holding
+        const HOLD_THRESHOLD: f64 = 0.2;
+        const MOVE_COOLDOWN: f64 = 0.1; // 100ms between moves
+        let current_time = get_time();
+
+        // Check for key press
         for key in [KeyCode::Left, KeyCode::Right, KeyCode::Down, KeyCode::Up] {
             if is_key_pressed(key) {
+                self.key_hold_start = Some((key, current_time));
                 match key {
                     KeyCode::Left => return InputState::MoveLeft,
                     KeyCode::Right => return InputState::MoveRight,
-                    KeyCode::Down => return InputState::Drop,
                     KeyCode::Up => return InputState::Rotate,
                     _ => (),
                 }
+            }
+        }
+
+        // Check for held keys
+        if let Some((key, start_time)) = self.key_hold_start {
+            if is_key_down(key) {
+                if current_time - start_time > HOLD_THRESHOLD {
+                    let elapsed = current_time - self.last_move_time;
+                    match key {
+                        KeyCode::Left if elapsed > MOVE_COOLDOWN => {
+                            self.last_move_time = current_time;
+                            return InputState::MoveLeft;
+                        }
+                        KeyCode::Right if elapsed > MOVE_COOLDOWN => {
+                            self.last_move_time = current_time;
+                            return InputState::MoveRight;
+                        }
+                        KeyCode::Down => return InputState::Drop,
+                        _ => (),
+                    }
+                }
+            } else {
+                self.key_hold_start = None;
             }
         }
 
