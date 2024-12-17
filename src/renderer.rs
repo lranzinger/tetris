@@ -20,12 +20,16 @@ struct ButtonBounds {
 
 pub struct Renderer {
     pub screen: ScreenConfig,
+    last_fps_update: f64,
+    current_fps: i32,
 }
 
 impl Renderer {
     pub fn new() -> Self {
         Self {
             screen: ScreenConfig::new(),
+            last_fps_update: 0.0,
+            current_fps: 0,
         }
     }
 
@@ -40,6 +44,8 @@ impl Renderer {
         self.draw_placed_pieces(state);
         self.draw_current_piece(state);
         self.draw_scores(state.current_score, state.high_score);
+
+        self.draw_debug_info();
 
         if state.game_over {
             self.draw_game_over();
@@ -199,5 +205,28 @@ impl Renderer {
                 self.draw_block(draw_x as f32, draw_y as f32, state.current_piece.color());
             }
         }
+    }
+
+    fn draw_debug_info(&mut self) {
+        if !cfg!(debug_assertions) {
+            return;
+        }
+
+        let current_time = get_time();
+
+        // Update FPS once per second
+        if current_time - self.last_fps_update >= 1.0 {
+            self.current_fps = get_fps();
+            self.last_fps_update = current_time;
+        }
+
+        let fps_text = format!("FPS: {}", self.current_fps);
+        let padding = 10.0;
+
+        let text_dims = measure_text(&fps_text, None, FONT_SIZE as u16, 1.0);
+        let x = screen_width() - text_dims.width - padding;
+        let y = text_dims.height + padding;
+
+        draw_text(&fps_text, x, y, FONT_SIZE, WHITE);
     }
 }
