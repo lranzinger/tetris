@@ -43,7 +43,7 @@ impl GameState {
             high_score: 0,
             current_piece: Tetromino::random(),
             rotated_piece: vec![(0, 0)],
-            current_position: (WIDTH / 2 - 2, 0),
+            current_position: (WIDTH / 2 - 2, -2),
             frame_count: 0,
             rotation_state: 0,
             game_over: false,
@@ -71,8 +71,13 @@ impl Game {
 
     fn spawn_piece(&mut self) {
         self.state.current_piece = Tetromino::random();
-        self.state.current_position = (WIDTH / 2 - 2, 0);
+        let shape = self.state.current_piece.shape();
+        let piece_width = shape.iter().map(|(x, _)| x).max().unwrap()
+            - shape.iter().map(|(x, _)| x).min().unwrap()
+            + 1;
+        self.state.current_position = (WIDTH / 2 - piece_width / 2, -2);
         self.state.rotation_state = 0; // Reset rotation state
+        self.state.rotated_piece = self.get_rotated_shape();
     }
 
     fn get_rotated_shape(&self) -> Vec<(i32, i32)> {
