@@ -6,10 +6,10 @@ use macroquad::prelude::*;
 
 const START_TEXT: &str = "";
 const START_BUTTON: &str = "Start";
-const GAMEOVER_TEXT: &str = "Spiel vorbei!";
+const GAMEOVER_TEXT: &str = "Spiel vorbei";
 const GAMEOVER_BUTTON: &str = "Neu starten";
-const SCORE_TEXT: &str = "Score: ";
-const HIGHSCORE_TEXT: &str = "Highscore: ";
+const SCORE_TEXT: &str = "Score:";
+const HIGHSCORE_TEXT: &str = "Highscore:";
 
 struct ButtonBounds {
     x: f32,
