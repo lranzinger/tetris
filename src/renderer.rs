@@ -42,7 +42,9 @@ impl Renderer {
 
         match state.status {
             GameStatus::Start => {
-                self.draw_placed_pieces(&state.dummy_board.cells, &state.board.flashing_lines);
+                if let Some(dummy_board) = &state.dummy_board {
+                    self.draw_placed_pieces(&dummy_board.cells, &[]);
+                }
                 self.draw_start_screen();
             }
             GameStatus::Playing => {

@@ -132,6 +132,7 @@ impl Game {
         match self.state.status {
             GameStatus::Start => {
                 if self.renderer.check_click(GameStatus::Start) {
+                    self.state.dummy_board = None;
                     self.state.status = GameStatus::Playing;
                 }
             }

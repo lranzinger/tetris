@@ -40,11 +40,11 @@ pub struct ScoreState {
 }
 
 pub struct GameState {
-    pub board: BoardState,
-    pub dummy_board: DummyBoard,
-    pub piece: PieceState,
-    pub score: ScoreState,
     pub status: GameStatus,
+    pub score: ScoreState,
+    pub dummy_board: Option<DummyBoard>,
+    pub board: BoardState,
+    pub piece: PieceState,
     pub timing: TimingState,
 }
 
@@ -56,10 +56,9 @@ impl GameState {
                 current: 0,
                 highest: 0,
             },
-            dummy_board: DummyBoard::new(),
+            dummy_board: Some(DummyBoard::new()),
             board: BoardState {
                 cells: [[None; WIDTH as usize]; HEIGHT as usize],
-
                 flashing_lines: Vec::new(),
             },
             piece: PieceState {
