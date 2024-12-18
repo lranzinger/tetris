@@ -41,16 +41,16 @@ impl Renderer {
 
         match state.status {
             GameStatus::Start => {
-                self.draw_placed_pieces(&state.dummy_board.cells);
+                self.draw_placed_pieces(&state.dummy_board.cells, &state.flashing_lines);
                 self.draw_start_screen();
             }
             GameStatus::Playing => {
-                self.draw_placed_pieces(&state.cells);
+                self.draw_placed_pieces(&state.cells, &state.flashing_lines);
                 self.draw_current_piece(state);
                 self.draw_score(state.current_score);
             }
             GameStatus::GameOver => {
-                self.draw_placed_pieces(&state.cells);
+                self.draw_placed_pieces(&state.cells, &state.flashing_lines);
                 self.draw_game_over(state.current_score, state.high_score);
             }
         }
@@ -279,12 +279,23 @@ impl Renderer {
         }
     }
 
-    fn draw_placed_pieces(&self, cells: &[[Option<Color>; WIDTH as usize]; HEIGHT as usize]) {
-        // Draw placed pieces
+    fn draw_placed_pieces(
+        &self,
+        cells: &[[Option<Color>; WIDTH as usize]; HEIGHT as usize],
+        flashing_lines: &[usize],
+    ) {
         for y in 0..HEIGHT {
+            let y_usize = y as usize;
+            let is_flashing = flashing_lines.contains(&y_usize);
             for x in 0..WIDTH {
-                if let Some(color) = cells[y as usize][x as usize] {
-                    self.draw_block(x as f32, y as f32, color);
+                if let Some(color) = cells[y_usize][x as usize] {
+                    let draw_color = if is_flashing && ((get_time() * 10.0) as i32 % 2 == 0) {
+                        // Flashing effect: alternate between white and original color
+                        WHITE
+                    } else {
+                        color
+                    };
+                    self.draw_block(x as f32, y as f32, draw_color);
                 }
             }
         }

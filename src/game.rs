@@ -8,6 +8,7 @@ use macroquad::prelude::*;
 
 pub const WIDTH: i32 = 10;
 pub const HEIGHT: i32 = 20;
+const LINE_CLEAR_DURATION: f32 = 0.5;
 
 pub enum GameStatus {
     Start,
@@ -31,6 +32,8 @@ pub struct GameState {
     pub move_timer: f32,
     pub fall_interval: f32,
     pub move_interval: f32,
+    pub flashing_lines: Vec<usize>,
+    pub line_clear_timer: f32,
 }
 
 impl GameState {
@@ -51,6 +54,8 @@ impl GameState {
             move_timer: 0.0,
             fall_interval: 0.5, // Time in seconds between automatic falls
             move_interval: 0.1, // Time in seconds between moves when key is held
+            flashing_lines: Vec::new(),
+            line_clear_timer: 0.0,
         }
     }
 }
@@ -145,28 +150,20 @@ impl Game {
     }
 
     fn clear_lines(&mut self) {
-        let mut new_board = [[None; WIDTH as usize]; HEIGHT as usize];
-        let mut new_row = HEIGHT as usize - 1;
-        let mut lines_cleared = 0;
+        let mut lines_to_clear = Vec::new();
 
-        // Scan from bottom up, skip full lines
-        for y in (0..HEIGHT as usize).rev() {
-            if !self.state.cells[y].iter().all(|&cell| cell.is_some()) {
-                new_board[new_row] = self.state.cells[y];
-                new_row = new_row.saturating_sub(1);
-            } else {
-                lines_cleared += 1;
+        // Identify full lines
+        for y in 0..HEIGHT as usize {
+            if self.state.cells[y].iter().all(|&cell| cell.is_some()) {
+                lines_to_clear.push(y);
             }
         }
 
-        // Update score if lines were cleared
-        if lines_cleared > 0 {
-            let points = 100 * (1 << (lines_cleared - 1));
-            self.state.current_score += points;
-            self.state.high_score = self.state.high_score.max(self.state.current_score);
+        if !lines_to_clear.is_empty() {
+            // Start line clear animation
+            self.state.flashing_lines = lines_to_clear;
+            self.state.line_clear_timer = LINE_CLEAR_DURATION;
         }
-
-        self.state.cells = new_board;
     }
 
     fn is_game_over(&self) -> bool {
@@ -201,6 +198,19 @@ impl Game {
     fn update_gameplay(&mut self) {
         let delta = get_frame_time();
 
+        // Handle line clear animation
+        if !self.state.flashing_lines.is_empty() {
+            self.state.line_clear_timer -= delta;
+            if self.state.line_clear_timer <= 0.0 {
+                // Remove lines after flashing
+                self.remove_flashing_lines();
+                self.state.flashing_lines.clear();
+            } else {
+                // Skip further updates during line clear animation
+                return;
+            }
+        }
+
         // Update timers
         self.state.fall_timer += delta;
         self.state.move_timer += delta;
@@ -229,6 +239,11 @@ impl Game {
     }
 
     fn handle_input(&mut self, input: InputState) {
+        // Ignore input during lock-in or line clear animation
+        if !self.state.flashing_lines.is_empty() {
+            return;
+        }
+
         match input {
             InputState::MoveLeft => {
                 if self.state.move_timer >= self.state.move_interval {
@@ -308,5 +323,28 @@ impl Game {
         self.state.game_over = false;
         self.state.frame_count = 0;
         self.spawn_piece();
+    }
+
+    fn remove_flashing_lines(&mut self) {
+        let mut new_board = [[None; WIDTH as usize]; HEIGHT as usize];
+        let mut new_row = HEIGHT as usize - 1;
+
+        // Copy the board, skipping the lines that were cleared
+        for y in (0..HEIGHT as usize).rev() {
+            if !self.state.flashing_lines.contains(&y) {
+                new_board[new_row] = self.state.cells[y];
+                new_row = new_row.saturating_sub(1);
+            }
+        }
+
+        // Update score based on number of lines cleared
+        let lines_cleared = self.state.flashing_lines.len();
+        if lines_cleared > 0 {
+            let points = 100 * (1 << (lines_cleared - 1));
+            self.state.current_score += points;
+            self.state.high_score = self.state.high_score.max(self.state.current_score);
+        }
+
+        self.state.cells = new_board;
     }
 }
