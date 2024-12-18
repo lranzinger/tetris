@@ -52,13 +52,22 @@ impl InputHandler {
         let current_time = get_time();
 
         // Check for key press
-        for key in [KeyCode::Left, KeyCode::Right, KeyCode::Down, KeyCode::Up] {
+        for key in [
+            KeyCode::Left,
+            KeyCode::Right,
+            KeyCode::Down,
+            KeyCode::Up,
+            KeyCode::A,
+            KeyCode::D,
+            KeyCode::S,
+            KeyCode::W,
+        ] {
             if is_key_pressed(key) {
                 self.key_hold_start = Some((key, current_time));
                 match key {
-                    KeyCode::Left => return InputState::MoveLeft,
-                    KeyCode::Right => return InputState::MoveRight,
-                    KeyCode::Up => return InputState::Rotate,
+                    KeyCode::Left | KeyCode::A => return InputState::MoveLeft,
+                    KeyCode::Right | KeyCode::D => return InputState::MoveRight,
+                    KeyCode::Up | KeyCode::W => return InputState::Rotate,
                     _ => (),
                 }
             }
@@ -70,15 +79,15 @@ impl InputHandler {
                 if current_time - start_time > HOLD_THRESHOLD {
                     let elapsed = current_time - self.last_move_time;
                     match key {
-                        KeyCode::Left if elapsed > MOVE_COOLDOWN => {
+                        KeyCode::Left | KeyCode::A if elapsed > MOVE_COOLDOWN => {
                             self.last_move_time = current_time;
                             return InputState::MoveLeft;
                         }
-                        KeyCode::Right if elapsed > MOVE_COOLDOWN => {
+                        KeyCode::Right | KeyCode::D if elapsed > MOVE_COOLDOWN => {
                             self.last_move_time = current_time;
                             return InputState::MoveRight;
                         }
-                        KeyCode::Down => return InputState::Drop,
+                        KeyCode::Down | KeyCode::S => return InputState::Drop,
                         _ => (),
                     }
                 }
