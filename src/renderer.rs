@@ -114,6 +114,27 @@ impl Renderer {
 
     fn draw_start_screen(&mut self) {
         self.draw_overlay_screen(START_TEXT, START_BUTTON);
+
+        // Draw instructions
+        let instructions = [
+            "Links/Rechts: Bewegen",
+            "Hoch: Drehen",
+            "Halten: Fallen lassen",
+        ];
+
+        let font_size = FONT_SIZE - 10.0;
+        let mut y_offset = screen_height() / 2.0 + 100.0;
+        for instruction in instructions {
+            let text_dims = measure_text(instruction, None, font_size as u16, 1.0);
+            draw_text(
+                instruction,
+                screen_width() / 2.0 - text_dims.width / 2.0,
+                y_offset,
+                font_size,
+                WHITE,
+            );
+            y_offset += 35.0;
+        }
     }
 
     fn draw_game_over(&mut self, score: u32, high_score: u32) {
