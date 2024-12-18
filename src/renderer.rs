@@ -4,9 +4,7 @@ use crate::{
 };
 use macroquad::prelude::*;
 
-const FONT_SIZE: f32 = 40.0;
-const BUTTON_FONT_SIZE: f32 = 30.0;
-const START_TEXT: &str = "Viel Spaß!";
+const START_TEXT: &str = "";
 const START_BUTTON: &str = "Start";
 const GAMEOVER_TEXT: &str = "Spiel vorbei!";
 const GAMEOVER_BUTTON: &str = "Neu starten";
@@ -49,7 +47,7 @@ impl Renderer {
             GameStatus::Playing => {
                 self.draw_placed_pieces(&state.cells);
                 self.draw_current_piece(state);
-                self.draw_scores(state.current_score, state.high_score);
+                self.draw_score(state.current_score);
             }
             GameStatus::GameOver => {
                 self.draw_placed_pieces(&state.cells);
@@ -100,19 +98,36 @@ impl Renderer {
             Color::new(1.0, 1.0, 1.0, 0.3),
         );
     }
+    fn get_button_bounds(&self, button_text: &str, font_size: f32) -> ButtonBounds {
+        let button_dims = measure_text(button_text, None, font_size as u16, 1.0);
 
-    fn get_button_bounds(&self, button_text: &str) -> ButtonBounds {
-        let button_dims = measure_text(button_text, None, BUTTON_FONT_SIZE as u16, 1.0);
+        let width = button_dims.width + screen_width() * 0.01;
+        let height = button_dims.height + screen_height() * 0.02;
 
         ButtonBounds {
-            x: screen_width() / 2.0 - button_dims.width / 2.0 - 10.0,
-            y: screen_height() / 2.0 + 30.0,
-            width: button_dims.width + 20.0,
-            height: button_dims.height + 20.0,
+            x: screen_width() / 2.0 - width / 2.0,
+            y: screen_height() / 2.0 + screen_height() * 0.02,
+            width,
+            height,
         }
     }
 
+    fn get_dynamic_font_size(&self) -> f32 {
+        // Base font size on screen height
+        let base_size = screen_height() * 0.05; // 5% of screen height
+        base_size.max(20.0) // Minimum size of 20
+    }
+
+    fn get_button_font_size(&self) -> f32 {
+        let base_size = self.get_dynamic_font_size() * 0.8; // Slightly smaller than main text
+        base_size.max(16.0) // Minimum size of 16
+    }
+
     fn draw_start_screen(&mut self) {
+        let font_size = self.get_dynamic_font_size();
+        let instruction_size = font_size * 0.8;
+        let spacing = screen_height() * 0.05; // 5% of screen height for spacing
+
         self.draw_overlay_screen(START_TEXT, START_BUTTON);
 
         // Draw instructions
@@ -122,67 +137,76 @@ impl Renderer {
             "Halten: Fallen lassen",
         ];
 
-        let font_size = FONT_SIZE - 10.0;
-        let mut y_offset = screen_height() / 2.0 + 100.0;
+        let mut y_offset = screen_height() / 2.0 + spacing * 2.0;
         for instruction in instructions {
-            let text_dims = measure_text(instruction, None, font_size as u16, 1.0);
+            let text_dims = measure_text(instruction, None, instruction_size as u16, 1.0);
             draw_text(
                 instruction,
                 screen_width() / 2.0 - text_dims.width / 2.0,
                 y_offset,
-                font_size,
+                instruction_size,
                 WHITE,
             );
-            y_offset += 35.0;
+            y_offset += spacing;
         }
     }
 
     fn draw_game_over(&mut self, score: u32, high_score: u32) {
         self.draw_overlay_screen(GAMEOVER_TEXT, GAMEOVER_BUTTON);
 
+        let font_size = self.get_dynamic_font_size() * 0.8;
+        let spacing = screen_height() * 0.1; // 10% of screen height for spacing
+
+        // Draw score
         let score_text = format!("{} {}", SCORE_TEXT, score);
-        let text_dims = measure_text(&score_text, None, FONT_SIZE as u16, 1.0);
+        let text_dims = measure_text(&score_text, None, font_size as u16, 1.0);
         draw_text(
             &score_text,
             screen_width() / 2.0 - text_dims.width / 2.0,
-            screen_height() / 2.0 + 130.0,
-            FONT_SIZE - 5.0,
+            screen_height() / 2.0 + spacing,
+            font_size,
             WHITE,
         );
 
+        // Draw highscore
         let highscore_text = format!("{} {}", HIGHSCORE_TEXT, high_score);
-        let text_dims = measure_text(&highscore_text, None, FONT_SIZE as u16, 1.0);
+        let text_dims = measure_text(&highscore_text, None, font_size as u16, 1.0);
         draw_text(
             &highscore_text,
             screen_width() / 2.0 - text_dims.width / 2.0,
-            screen_height() / 2.0 + 170.0,
-            FONT_SIZE - 5.0,
+            screen_height() / 2.0 + spacing * 1.5,
+            font_size,
             WHITE,
         );
     }
     fn draw_overlay_screen(&mut self, title: &str, button_text: &str) {
+        let font_size = self.get_dynamic_font_size();
+        let button_size = self.get_button_font_size();
+
+        // Draw overlay
         let overlay_color = Color::new(0.0, 0.0, 0.0, 0.7);
         draw_rectangle(0.0, 0.0, screen_width(), screen_height(), overlay_color);
 
-        let text_dims = measure_text(title, None, FONT_SIZE as u16, 1.0);
+        // Draw title
+        let text_dims = measure_text(title, None, font_size as u16, 1.0);
         draw_text(
             title,
             screen_width() / 2.0 - text_dims.width / 2.0,
             screen_height() / 2.0,
-            FONT_SIZE,
+            font_size,
             WHITE,
         );
 
-        let button = self.get_button_bounds(button_text);
-
+        // Draw button
+        let button = self.get_button_bounds(button_text, button_size);
         draw_rectangle(button.x, button.y, button.width, button.height, DARKGRAY);
-        draw_text(
-            button_text,
-            button.x + 10.0,
-            button.y + button.height - 10.0,
-            BUTTON_FONT_SIZE,
-            WHITE,
-        );
+
+        // Calculate text dimensions for centering
+        let text_dims = measure_text(button_text, None, button_size as u16, 1.0);
+        let text_x = button.x + (button.width - text_dims.width) / 2.0;
+        let text_y = button.y + (button.height + text_dims.height) / 2.0;
+
+        draw_text(button_text, text_x, text_y, button_size, WHITE);
     }
 
     pub fn check_click(&self, status: GameStatus) -> bool {
@@ -190,13 +214,14 @@ impl Renderer {
             return false;
         }
 
+        let button_size = self.get_button_font_size();
         let button_text = match status {
             GameStatus::Start => START_BUTTON,
             GameStatus::GameOver => GAMEOVER_BUTTON,
             _ => return false,
         };
         let (mouse_x, mouse_y) = mouse_position();
-        let button = self.get_button_bounds(button_text);
+        let button = self.get_button_bounds(button_text, button_size);
 
         mouse_x >= button.x
             && mouse_x <= button.x + button.width
@@ -204,12 +229,16 @@ impl Renderer {
             && mouse_y <= button.y + button.height
     }
 
-    fn draw_scores(&self, current_score: u32, high_score: u32) {
+    fn draw_score(&self, current_score: u32) {
         let score_text = format!("{} {}", SCORE_TEXT, current_score);
-        let high_score_text = format!("{} {}", HIGHSCORE_TEXT, high_score);
+        let font_size = self.get_dynamic_font_size();
+        let padding: f32 = 10.0;
 
-        draw_text(&score_text, 10.0, 30.0, FONT_SIZE, WHITE);
-        draw_text(&high_score_text, 10.0, 60.0, FONT_SIZE, WHITE);
+        let text_dims = measure_text(&score_text, None, font_size as u16, 1.0);
+        let x = padding;
+        let y = text_dims.height + padding;
+
+        draw_text(&score_text, x, y, font_size, WHITE);
     }
 
     fn draw_game_field(&self) {
@@ -285,12 +314,13 @@ impl Renderer {
         }
 
         let fps_text = format!("FPS: {}", self.current_fps);
-        let padding = 10.0;
+        let padding: f32 = 10.0;
 
-        let text_dims = measure_text(&fps_text, None, FONT_SIZE as u16, 1.0);
+        let font_size = self.get_dynamic_font_size();
+        let text_dims = measure_text(&fps_text, None, font_size as u16, 1.0);
         let x = screen_width() - text_dims.width - padding;
         let y = text_dims.height + padding;
 
-        draw_text(&fps_text, x, y, FONT_SIZE, WHITE);
+        draw_text(&fps_text, x, y, font_size, WHITE);
     }
 }
