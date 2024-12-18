@@ -3,6 +3,7 @@ mod game;
 mod input;
 mod renderer;
 mod screen;
+mod state;
 mod tetromino;
 
 use game::Game;

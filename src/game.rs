@@ -1,7 +1,7 @@
 use crate::{
-    dummy::DummyBoard,
     input::{InputHandler, InputState},
     renderer::Renderer,
+    state::{GameState, GameStatus},
     tetromino::Tetromino,
 };
 use macroquad::prelude::*;
@@ -9,52 +9,6 @@ use macroquad::prelude::*;
 pub const WIDTH: i32 = 10;
 pub const HEIGHT: i32 = 20;
 const LINE_CLEAR_DURATION: f32 = 0.5;
-
-pub enum GameStatus {
-    Start,
-    Playing,
-    GameOver,
-}
-
-pub struct GameState {
-    pub status: GameStatus,
-    pub cells: [[Option<Color>; WIDTH as usize]; HEIGHT as usize],
-    pub dummy_board: DummyBoard,
-    pub current_score: u32,
-    pub high_score: u32,
-    pub current_piece: Tetromino,
-    pub rotated_piece: Vec<(i32, i32)>,
-    pub current_position: (i32, i32),
-    pub rotation_state: i32,
-    pub fall_timer: f32,
-    pub move_timer: f32,
-    pub fall_interval: f32,
-    pub move_interval: f32,
-    pub flashing_lines: Vec<usize>,
-    pub line_clear_timer: f32,
-}
-
-impl GameState {
-    pub fn new() -> Self {
-        Self {
-            status: GameStatus::Start,
-            cells: [[None; WIDTH as usize]; HEIGHT as usize],
-            dummy_board: DummyBoard::new(),
-            current_score: 0,
-            high_score: 0,
-            current_piece: Tetromino::random(),
-            rotated_piece: vec![(0, 0)],
-            current_position: (WIDTH / 2 - 2, -1),
-            rotation_state: 0,
-            fall_timer: 0.0,
-            move_timer: 0.0,
-            fall_interval: 0.5, // Time in seconds between automatic falls
-            move_interval: 0.1, // Time in seconds between moves when key is held
-            flashing_lines: Vec::new(),
-            line_clear_timer: 0.0,
-        }
-    }
-}
 
 pub struct Game {
     pub state: GameState,
@@ -71,25 +25,25 @@ impl Game {
     }
 
     fn spawn_piece(&mut self) {
-        self.state.current_piece = Tetromino::random();
-        let shape = self.state.current_piece.shape();
+        self.state.piece.typ = Tetromino::random();
+        let shape = self.state.piece.typ.shape();
         let piece_width = shape.iter().map(|(x, _)| x).max().unwrap()
             - shape.iter().map(|(x, _)| x).min().unwrap()
             + 1;
-        self.state.current_position = (WIDTH / 2 - piece_width / 2, -1);
-        self.state.rotation_state = 0; // Reset rotation state
-        self.state.rotated_piece = self.get_rotated_shape();
+        self.state.piece.position = (WIDTH / 2 - piece_width / 2, -1);
+        self.state.piece.rotation = 0; // Reset rotation state
+        self.state.piece.rotated = self.get_rotated_shape();
     }
 
     fn get_rotated_shape(&self) -> Vec<(i32, i32)> {
-        let shape = self.state.current_piece.shape();
+        let shape = self.state.piece.typ.shape();
 
         // Calculate center of piece
         let center_x = shape.iter().map(|(x, _)| x).sum::<i32>() / shape.len() as i32;
         let center_y = shape.iter().map(|(_, y)| y).sum::<i32>() / shape.len() as i32;
 
         // Apply rotation around center
-        match self.state.rotation_state {
+        match self.state.piece.rotation {
             0 => shape,
             1 => shape
                 .iter()
@@ -120,12 +74,12 @@ impl Game {
     }
 
     fn can_move(&self, dx: i32, dy: i32) -> bool {
-        for &(x, y) in &self.state.rotated_piece {
-            let new_x = self.state.current_position.0 + x + dx;
-            let new_y = self.state.current_position.1 + y + dy;
+        for &(x, y) in &self.state.piece.rotated {
+            let new_x = self.state.piece.position.0 + x + dx;
+            let new_y = self.state.piece.position.1 + y + dy;
             if !(0..WIDTH).contains(&new_x)
                 || new_y >= HEIGHT
-                || (new_y >= 0 && self.state.cells[new_y as usize][new_x as usize].is_some())
+                || (new_y >= 0 && self.state.board.cells[new_y as usize][new_x as usize].is_some())
             {
                 return false;
             }
@@ -134,12 +88,12 @@ impl Game {
     }
 
     fn lock_piece(&mut self) {
-        for &(x, y) in &self.state.rotated_piece {
-            let board_x = self.state.current_position.0 + x;
-            let board_y = self.state.current_position.1 + y;
+        for &(x, y) in &self.state.piece.rotated {
+            let board_x = self.state.piece.position.0 + x;
+            let board_y = self.state.piece.position.1 + y;
             if board_y >= 0 {
-                self.state.cells[board_y as usize][board_x as usize] =
-                    Some(self.state.current_piece.color());
+                self.state.board.cells[board_y as usize][board_x as usize] =
+                    Some(self.state.piece.typ.color());
             }
         }
         self.input.reset();
@@ -150,23 +104,24 @@ impl Game {
 
         // Identify full lines
         for y in 0..HEIGHT as usize {
-            if self.state.cells[y].iter().all(|&cell| cell.is_some()) {
+            if self.state.board.cells[y].iter().all(|&cell| cell.is_some()) {
                 lines_to_clear.push(y);
             }
         }
 
         if !lines_to_clear.is_empty() {
             // Start line clear animation
-            self.state.flashing_lines = lines_to_clear;
-            self.state.line_clear_timer = LINE_CLEAR_DURATION;
+            self.state.board.flashing_lines = lines_to_clear;
+            self.state.timing.line_clear_timer = LINE_CLEAR_DURATION;
         }
     }
     fn is_game_over(&self) -> bool {
         // Check if new piece overlaps with existing pieces
-        for &(x, y) in &self.state.rotated_piece {
-            let board_x = self.state.current_position.0 + x;
-            let board_y = self.state.current_position.1 + y;
-            if board_y >= 0 && self.state.cells[board_y as usize][board_x as usize].is_some() {
+        for &(x, y) in &self.state.piece.rotated {
+            let board_x = self.state.piece.position.0 + x;
+            let board_y = self.state.piece.position.1 + y;
+            if board_y >= 0 && self.state.board.cells[board_y as usize][board_x as usize].is_some()
+            {
                 return true;
             }
         }
@@ -194,12 +149,12 @@ impl Game {
         let delta = get_frame_time();
 
         // Handle line clear animation
-        if !self.state.flashing_lines.is_empty() {
-            self.state.line_clear_timer -= delta;
-            if self.state.line_clear_timer <= 0.0 {
+        if !self.state.board.flashing_lines.is_empty() {
+            self.state.timing.line_clear_timer -= delta;
+            if self.state.timing.line_clear_timer <= 0.0 {
                 // Remove lines after flashing
                 self.remove_flashing_lines();
-                self.state.flashing_lines.clear();
+                self.state.board.flashing_lines.clear();
             } else {
                 // Skip further updates during line clear animation
                 return;
@@ -207,14 +162,14 @@ impl Game {
         }
 
         // Update timers
-        self.state.fall_timer += delta;
-        self.state.move_timer += delta;
+        self.state.timing.fall_timer += delta;
+        self.state.timing.move_timer += delta;
 
         // Handle automatic piece falling
-        if self.state.fall_timer >= self.state.fall_interval {
-            self.state.fall_timer = 0.0;
+        if self.state.timing.fall_timer >= self.state.timing.fall_interval {
+            self.state.timing.fall_timer = 0.0;
             if self.can_move(0, 1) {
-                self.state.current_position.1 += 1;
+                self.state.piece.position.1 += 1;
             } else {
                 self.lock_piece();
                 self.clear_lines();
@@ -226,7 +181,7 @@ impl Game {
         let input_state = self.input.update();
         self.handle_input(input_state);
 
-        self.state.rotated_piece = self.get_rotated_shape();
+        self.state.piece.rotated = self.get_rotated_shape();
 
         if self.is_game_over() {
             self.state.status = GameStatus::GameOver;
@@ -235,76 +190,76 @@ impl Game {
 
     fn handle_input(&mut self, input: InputState) {
         // Ignore input during lock-in or line clear animation
-        if !self.state.flashing_lines.is_empty() {
+        if !self.state.board.flashing_lines.is_empty() {
             return;
         }
 
         match input {
             InputState::MoveLeft => {
-                if self.state.move_timer >= self.state.move_interval {
+                if self.state.timing.move_timer >= self.state.timing.move_interval {
                     if self.can_move(-1, 0) {
-                        self.state.current_position.0 -= 1;
+                        self.state.piece.position.0 -= 1;
                     }
-                    self.state.move_timer = 0.0;
+                    self.state.timing.move_timer = 0.0;
                 }
             }
             InputState::MoveRight => {
-                if self.state.move_timer >= self.state.move_interval {
+                if self.state.timing.move_timer >= self.state.timing.move_interval {
                     if self.can_move(1, 0) {
-                        self.state.current_position.0 += 1;
+                        self.state.piece.position.0 += 1;
                     }
-                    self.state.move_timer = 0.0;
+                    self.state.timing.move_timer = 0.0;
                 }
             }
             InputState::Rotate => {
                 self.try_rotation();
-                self.state.move_timer = 0.0;
+                self.state.timing.move_timer = 0.0;
             }
             InputState::Drop => {
-                self.state.fall_interval = 0.05; // Increase fall speed when dropping
+                self.state.timing.fall_interval = 0.05; // Increase fall speed when dropping
             }
             InputState::None => {
-                self.state.fall_interval = 0.5; // Reset fall speed
+                self.state.timing.fall_interval = 0.5; // Reset fall speed
             }
         }
     }
 
     fn try_rotation(&mut self) -> bool {
-        if self.state.current_piece == Tetromino::O {
+        if self.state.piece.typ == Tetromino::O {
             return false;
         }
 
-        let original_x = self.state.current_position.0;
+        let original_x = self.state.piece.position.0;
 
         let offsets = [0, -1, 1, -2, 2];
 
-        let next_rotation = (self.state.rotation_state + 1) % 4;
-        let temp_rotation = self.state.rotation_state;
-        self.state.rotation_state = next_rotation;
-        self.state.rotated_piece = self.get_rotated_shape();
+        let next_rotation = (self.state.piece.rotation + 1) % 4;
+        let temp_rotation = self.state.piece.rotation;
+        self.state.piece.rotation = next_rotation;
+        self.state.piece.rotated = self.get_rotated_shape();
 
         for &offset in &offsets {
-            self.state.current_position.0 = original_x + offset;
+            self.state.piece.position.0 = original_x + offset;
             if self.is_valid_position() {
                 return true;
             }
         }
 
         // Restore original position and rotation if no valid position found
-        self.state.current_position.0 = original_x;
-        self.state.rotation_state = temp_rotation;
-        self.state.rotated_piece = self.get_rotated_shape();
+        self.state.piece.position.0 = original_x;
+        self.state.piece.rotation = temp_rotation;
+        self.state.piece.rotated = self.get_rotated_shape();
         false
     }
 
     fn is_valid_position(&self) -> bool {
-        for &(x, y) in &self.state.rotated_piece {
-            let new_x = self.state.current_position.0 + x;
-            let new_y = self.state.current_position.1 + y;
+        for &(x, y) in &self.state.piece.rotated {
+            let new_x = self.state.piece.position.0 + x;
+            let new_y = self.state.piece.position.1 + y;
             if new_x < 0
                 || new_x >= WIDTH
                 || new_y >= HEIGHT
-                || (new_y >= 0 && self.state.cells[new_y as usize][new_x as usize].is_some())
+                || (new_y >= 0 && self.state.board.cells[new_y as usize][new_x as usize].is_some())
             {
                 return false;
             }
@@ -313,9 +268,9 @@ impl Game {
     }
 
     fn restart(&mut self) {
-        let high_score = self.state.high_score;
+        let high_score = self.state.score.highest;
         let mut new_state = GameState::new();
-        new_state.high_score = high_score;
+        new_state.score.highest = high_score;
         self.state = new_state;
     }
 
@@ -325,20 +280,20 @@ impl Game {
 
         // Copy the board, skipping the lines that were cleared
         for y in (0..HEIGHT as usize).rev() {
-            if !self.state.flashing_lines.contains(&y) {
-                new_board[new_row] = self.state.cells[y];
+            if !self.state.board.flashing_lines.contains(&y) {
+                new_board[new_row] = self.state.board.cells[y];
                 new_row = new_row.saturating_sub(1);
             }
         }
 
         // Update score based on number of lines cleared
-        let lines_cleared = self.state.flashing_lines.len();
+        let lines_cleared = self.state.board.flashing_lines.len();
         if lines_cleared > 0 {
             let points = 100 * (1 << (lines_cleared - 1));
-            self.state.current_score += points;
-            self.state.high_score = self.state.high_score.max(self.state.current_score);
+            self.state.score.current += points;
+            self.state.score.highest = self.state.score.current.max(self.state.score.current);
         }
 
-        self.state.cells = new_board;
+        self.state.board.cells = new_board;
     }
 }

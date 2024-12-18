@@ -1,6 +1,7 @@
 use crate::{
-    game::{GameState, GameStatus, HEIGHT, WIDTH},
+    game::{HEIGHT, WIDTH},
     screen::ScreenConfig,
+    state::{Board, GameState, GameStatus, PieceState},
 };
 use macroquad::prelude::*;
 
@@ -41,17 +42,17 @@ impl Renderer {
 
         match state.status {
             GameStatus::Start => {
-                self.draw_placed_pieces(&state.dummy_board.cells, &state.flashing_lines);
+                self.draw_placed_pieces(&state.dummy_board.cells, &state.board.flashing_lines);
                 self.draw_start_screen();
             }
             GameStatus::Playing => {
-                self.draw_placed_pieces(&state.cells, &state.flashing_lines);
-                self.draw_current_piece(state);
-                self.draw_score(state.current_score);
+                self.draw_placed_pieces(&state.board.cells, &state.board.flashing_lines);
+                self.draw_current_piece(&state.piece);
+                self.draw_score(state.score.current);
             }
             GameStatus::GameOver => {
-                self.draw_placed_pieces(&state.cells, &state.flashing_lines);
-                self.draw_game_over(state.current_score, state.high_score);
+                self.draw_placed_pieces(&state.board.cells, &state.board.flashing_lines);
+                self.draw_game_over(state.score.current, state.score.highest);
             }
         }
 
@@ -279,11 +280,7 @@ impl Renderer {
         }
     }
 
-    fn draw_placed_pieces(
-        &self,
-        cells: &[[Option<Color>; WIDTH as usize]; HEIGHT as usize],
-        flashing_lines: &[usize],
-    ) {
+    fn draw_placed_pieces(&self, cells: &Board, flashing_lines: &[usize]) {
         for y in 0..HEIGHT {
             let y_usize = y as usize;
             let is_flashing = flashing_lines.contains(&y_usize);
@@ -301,12 +298,12 @@ impl Renderer {
         }
     }
 
-    fn draw_current_piece(&self, state: &GameState) {
-        for &(x, y) in &state.rotated_piece {
-            let draw_x = state.current_position.0 + x;
-            let draw_y = state.current_position.1 + y;
+    fn draw_current_piece(&self, piece: &PieceState) {
+        for &(x, y) in &piece.rotated {
+            let draw_x = piece.position.0 + x;
+            let draw_y = piece.position.1 + y;
             if draw_y >= 0 {
-                self.draw_block(draw_x as f32, draw_y as f32, state.current_piece.color());
+                self.draw_block(draw_x as f32, draw_y as f32, piece.typ.color());
             }
         }
     }

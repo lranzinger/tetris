@@ -1,11 +1,12 @@
 use crate::{
     game::{HEIGHT, WIDTH},
+    state::Board,
     tetromino::Tetromino,
 };
-use macroquad::{color::Color, rand::gen_range};
+use macroquad::rand::gen_range;
 
 pub struct DummyBoard {
-    pub cells: [[Option<Color>; WIDTH as usize]; HEIGHT as usize],
+    pub cells: Board,
 }
 
 impl DummyBoard {
