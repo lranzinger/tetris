@@ -101,7 +101,7 @@ impl InputHandler {
 
     fn handle_touch(&mut self) -> InputState {
         let current_time = get_time();
-        const MOVE_THRESHOLD: f32 = 15.0;
+        const MOVE_THRESHOLD: f32 = 20.0;
         const SWIPE_THRESHOLD: f32 = 30.0;
         const HOLD_THRESHOLD: f64 = 0.1;
         const SWIPE_COOLDOWN: f64 = 0.2;
