@@ -27,7 +27,10 @@ pub struct GameState {
     pub frame_count: i32,
     pub rotation_state: i32,
     pub game_over: bool,
-    pub fall_delay: i32,
+    pub fall_timer: f32,
+    pub move_timer: f32,
+    pub fall_interval: f32,
+    pub move_interval: f32,
 }
 
 impl GameState {
@@ -44,7 +47,10 @@ impl GameState {
             frame_count: 0,
             rotation_state: 0,
             game_over: false,
-            fall_delay: 20,
+            fall_timer: 0.0,
+            move_timer: 0.0,
+            fall_interval: 0.5, // Time in seconds between automatic falls
+            move_interval: 0.1, // Time in seconds between moves when key is held
         }
     }
 }
@@ -188,13 +194,15 @@ impl Game {
     }
 
     fn update_gameplay(&mut self) {
-        let input_state = self.input.update();
-        self.handle_input(input_state);
+        let delta = get_frame_time();
 
-        self.state.rotated_piece = self.get_rotated_shape();
+        // Update timers
+        self.state.fall_timer += delta;
+        self.state.move_timer += delta;
 
-        self.state.frame_count += 1;
-        if self.state.frame_count % self.state.fall_delay == 0 {
+        // Handle automatic piece falling
+        if self.state.fall_timer >= self.state.fall_interval {
+            self.state.fall_timer = 0.0;
             if self.can_move(0, 1) {
                 self.state.current_position.1 += 1;
             } else {
@@ -204,6 +212,12 @@ impl Game {
             }
         }
 
+        // Handle input
+        let input_state = self.input.update();
+        self.handle_input(input_state);
+
+        self.state.rotated_piece = self.get_rotated_shape();
+
         if self.is_game_over() {
             self.state.status = GameStatus::GameOver;
         }
@@ -212,22 +226,31 @@ impl Game {
     fn handle_input(&mut self, input: InputState) {
         match input {
             InputState::MoveLeft => {
-                if self.can_move(-1, 0) {
-                    self.state.current_position.0 -= 1;
+                if self.state.move_timer >= self.state.move_interval {
+                    if self.can_move(-1, 0) {
+                        self.state.current_position.0 -= 1;
+                    }
+                    self.state.move_timer = 0.0;
                 }
             }
             InputState::MoveRight => {
-                if self.can_move(1, 0) {
-                    self.state.current_position.0 += 1;
+                if self.state.move_timer >= self.state.move_interval {
+                    if self.can_move(1, 0) {
+                        self.state.current_position.0 += 1;
+                    }
+                    self.state.move_timer = 0.0;
                 }
             }
             InputState::Rotate => {
                 self.try_rotation();
+                self.state.move_timer = 0.0;
             }
             InputState::Drop => {
-                self.state.fall_delay = 2;
+                self.state.fall_interval = 0.05; // Increase fall speed when dropping
             }
-            InputState::None => self.state.fall_delay = 20,
+            InputState::None => {
+                self.state.fall_interval = 0.5; // Reset fall speed
+            }
         }
     }
 
