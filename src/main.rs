@@ -11,7 +11,7 @@ use miniquad::date;
 
 fn window_conf() -> Conf {
     Conf {
-        window_title: "Tetris".to_owned(),
+        window_title: "Blocks".to_owned(),
         high_dpi: true,
         window_resizable: true,
         ..Default::default()

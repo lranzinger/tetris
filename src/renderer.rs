@@ -6,9 +6,9 @@ use macroquad::prelude::*;
 
 const FONT_SIZE: f32 = 40.0;
 const BUTTON_FONT_SIZE: f32 = 30.0;
-const START_TEXT: &str = "Tetris";
+const START_TEXT: &str = "Viel Spaß!";
 const START_BUTTON: &str = "Start";
-const GAMEOVER_TEXT: &str = "Game Over!";
+const GAMEOVER_TEXT: &str = "Spiel vorbei!";
 const GAMEOVER_BUTTON: &str = "Neu starten";
 const SCORE_TEXT: &str = "Score: ";
 const HIGHSCORE_TEXT: &str = "Highscore: ";
