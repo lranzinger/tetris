@@ -25,9 +25,7 @@ pub struct GameState {
     pub current_piece: Tetromino,
     pub rotated_piece: Vec<(i32, i32)>,
     pub current_position: (i32, i32),
-    pub frame_count: i32,
     pub rotation_state: i32,
-    pub game_over: bool,
     pub fall_timer: f32,
     pub move_timer: f32,
     pub fall_interval: f32,
@@ -46,10 +44,8 @@ impl GameState {
             high_score: 0,
             current_piece: Tetromino::random(),
             rotated_piece: vec![(0, 0)],
-            current_position: (WIDTH / 2 - 2, -2),
-            frame_count: 0,
+            current_position: (WIDTH / 2 - 2, -1),
             rotation_state: 0,
-            game_over: false,
             fall_timer: 0.0,
             move_timer: 0.0,
             fall_interval: 0.5, // Time in seconds between automatic falls
@@ -80,7 +76,7 @@ impl Game {
         let piece_width = shape.iter().map(|(x, _)| x).max().unwrap()
             - shape.iter().map(|(x, _)| x).min().unwrap()
             + 1;
-        self.state.current_position = (WIDTH / 2 - piece_width / 2, -2);
+        self.state.current_position = (WIDTH / 2 - piece_width / 2, -1);
         self.state.rotation_state = 0; // Reset rotation state
         self.state.rotated_piece = self.get_rotated_shape();
     }
@@ -165,7 +161,6 @@ impl Game {
             self.state.line_clear_timer = LINE_CLEAR_DURATION;
         }
     }
-
     fn is_game_over(&self) -> bool {
         // Check if new piece overlaps with existing pieces
         for &(x, y) in &self.state.rotated_piece {
@@ -318,11 +313,10 @@ impl Game {
     }
 
     fn restart(&mut self) {
-        self.state.cells = [[None; WIDTH as usize]; HEIGHT as usize];
-        self.state.current_score = 0;
-        self.state.game_over = false;
-        self.state.frame_count = 0;
-        self.spawn_piece();
+        let high_score = self.state.high_score;
+        let mut new_state = GameState::new();
+        new_state.high_score = high_score;
+        self.state = new_state;
     }
 
     fn remove_flashing_lines(&mut self) {
