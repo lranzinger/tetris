@@ -95,59 +95,81 @@ impl InputHandler {
         const MOVE_THRESHOLD: f32 = 15.0;
         const SWIPE_THRESHOLD: f32 = 30.0;
         const HOLD_THRESHOLD: f64 = 0.1;
-        const SWIPE_COOLDOWN: f64 = 0.2; // in s
+        const SWIPE_COOLDOWN: f64 = 0.2;
 
+        // Handle lost focus or anomaly
+        if !is_mouse_button_down(MouseButton::Left) && !is_mouse_button_pressed(MouseButton::Left) {
+            self.reset_touch_state();
+            return InputState::None;
+        }
+
+        // New touch/press - reset and initialize
         if is_mouse_button_pressed(MouseButton::Left) {
+            self.reset_touch_state();
             self.touch_start = Some(mouse_position());
             self.touch_start_time = Some(current_time);
             self.touch_last_pos = Some(mouse_position());
-            self.swipe_performed = false;
-        } else if is_mouse_button_down(MouseButton::Left) {
-            if let (Some(start_pos), Some(start_time)) = (self.touch_start, self.touch_start_time) {
-                let (current_x, current_y) = mouse_position();
-                let dx = current_x - start_pos.0;
-                let dy = current_y - start_pos.1;
+            return InputState::None;
+        }
 
-                // Check for hold
-                if dx.abs() < MOVE_THRESHOLD && dy.abs() < MOVE_THRESHOLD {
-                    let hold_time = current_time - start_time;
-                    if hold_time > HOLD_THRESHOLD {
-                        return InputState::Drop;
-                    }
-                }
-                // Check for swipe with cooldown
-                else if !self.swipe_performed
-                    && current_time - self.last_swipe_time > SWIPE_COOLDOWN
-                    && (dx.abs() > SWIPE_THRESHOLD || dy.abs() > SWIPE_THRESHOLD)
-                {
-                    self.swipe_performed = true;
-                    self.last_swipe_time = current_time;
+        // Only process if we have valid start state
+        if let (Some(start_pos), Some(start_time), Some(_)) =
+            (self.touch_start, self.touch_start_time, self.touch_last_pos)
+        {
+            let (current_x, current_y) = mouse_position();
+            let dx = current_x - start_pos.0;
+            let dy = current_y - start_pos.1;
 
-                    if dx.abs() > dy.abs() {
-                        if dx > 0.0 {
-                            return InputState::MoveRight;
-                        } else {
-                            return InputState::MoveLeft;
-                        }
-                    } else if dy < 0.0 {
-                        return InputState::Rotate;
-                    }
+            // Prevent stuck states with timeout
+            if current_time - start_time > 2.0 {
+                // 2 second timeout
+                self.reset_touch_state();
+                return InputState::None;
+            }
+
+            // Handle swipe
+            if !self.swipe_performed
+                && current_time - self.last_swipe_time > SWIPE_COOLDOWN
+                && (dx.abs() > SWIPE_THRESHOLD || dy.abs() > SWIPE_THRESHOLD)
+            {
+                self.swipe_performed = true;
+                self.last_swipe_time = current_time;
+
+                if dx.abs() > dy.abs() {
+                    return if dx > 0.0 {
+                        InputState::MoveRight
+                    } else {
+                        InputState::MoveLeft
+                    };
+                } else if dy < 0.0 {
+                    return InputState::Rotate;
                 }
             }
-        } else if is_mouse_button_released(MouseButton::Left) {
-            self.touch_start = None;
-            self.touch_start_time = None;
-            self.touch_last_pos = None;
-            self.swipe_performed = false;
+
+            // Handle hold
+            if dx.abs() < MOVE_THRESHOLD
+                && dy.abs() < MOVE_THRESHOLD
+                && current_time - start_time > HOLD_THRESHOLD
+            {
+                return InputState::Drop;
+            }
+        } else {
+            // Invalid state detected, reset
+            self.reset_touch_state();
         }
+
         InputState::None
     }
 
     pub fn reset(&mut self) {
         self.key_hold_start = None;
-        self.swipe_performed = false;
+        self.reset_touch_state();
+    }
+
+    fn reset_touch_state(&mut self) {
         self.touch_start = None;
         self.touch_start_time = None;
         self.touch_last_pos = None;
+        self.swipe_performed = false;
     }
 }
