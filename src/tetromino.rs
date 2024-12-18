@@ -1,7 +1,7 @@
 use macroquad::prelude::*;
 use rand::gen_range;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Tetromino {
     I,
     O,

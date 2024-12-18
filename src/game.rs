@@ -232,6 +232,10 @@ impl Game {
     }
 
     fn try_rotation(&mut self) -> bool {
+        if self.state.current_piece == Tetromino::O {
+            return false;
+        }
+
         let original_x = self.state.current_position.0;
 
         let offsets = [0, -1, 1, -2, 2];
