@@ -37,37 +37,26 @@ impl Game {
 
     fn get_rotated_shape(&self) -> Vec<(i32, i32)> {
         let shape = self.state.piece.typ.shape();
+        let pivot = (1, 1);
 
-        // Calculate center of piece
-        let center_x = shape.iter().map(|(x, _)| x).sum::<i32>() / shape.len() as i32;
-        let center_y = shape.iter().map(|(_, y)| y).sum::<i32>() / shape.len() as i32;
+        let moved_center: Vec<_> = shape
+            .iter()
+            .map(|&(x, y)| (x - pivot.0, y - pivot.1))
+            .collect();
 
-        // Apply rotation around center
         match self.state.piece.rotation {
             RotationState::Zero => shape,
-            RotationState::Right => shape
+            RotationState::Right => moved_center
                 .iter()
-                .map(|&(x, y)| {
-                    let dx = x - center_x;
-                    let dy = y - center_y;
-                    (center_x - dy, center_y + dx)
-                })
+                .map(|&(x, y)| (-y + pivot.0, x + pivot.1))
                 .collect(),
-            RotationState::Two => shape
+            RotationState::Two => moved_center
                 .iter()
-                .map(|&(x, y)| {
-                    let dx = x - center_x;
-                    let dy = y - center_y;
-                    (center_x - dx, center_y - dy)
-                })
+                .map(|&(x, y)| (-x + pivot.0, -y + pivot.1))
                 .collect(),
-            RotationState::Left => shape
+            RotationState::Left => moved_center
                 .iter()
-                .map(|&(x, y)| {
-                    let dx = x - center_x;
-                    let dy = y - center_y;
-                    (center_x + dy, center_y - dx)
-                })
+                .map(|&(x, y)| (y + pivot.0, -x + pivot.1))
                 .collect(),
         }
     }
@@ -233,9 +222,8 @@ impl Game {
 
         let offsets = [0, -1, 1, -2, 2];
 
-        let next_rotation = self.state.piece.rotation.next();
         let temp_rotation = self.state.piece.rotation;
-        self.state.piece.rotation = next_rotation;
+        self.state.piece.rotation = self.state.piece.rotation.next();
         self.state.piece.rotated = self.get_rotated_shape();
 
         for &offset in &offsets {
