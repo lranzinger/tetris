@@ -1,5 +1,6 @@
 use crate::{
     input::{InputHandler, InputState},
+    level::LEVEL_CONFIGS,
     renderer::Renderer,
     state::{GameState, GameStatus, RotationState},
     tetromino::Tetromino,
@@ -98,11 +99,22 @@ impl Game {
         }
 
         if !lines_to_clear.is_empty() {
+            let num_of_lines_to_clear = lines_to_clear.len() as u32;
+
             // Start line clear animation
             self.state.board.flashing_lines = lines_to_clear;
             self.state.timing.line_clear_timer = LINE_CLEAR_DURATION;
+
+            // Calculate scrore
+            let score = self.calculate_score(num_of_lines_to_clear);
+            self.state.score.current += score;
+            self.state.level.total_lines_cleared += num_of_lines_to_clear;
+
+            // Update level
+            self.update_level();
         }
     }
+
     fn is_game_over(&self) -> bool {
         // Check if new piece overlaps with existing pieces
         for &(x, y) in &self.state.piece.rotated {
@@ -208,7 +220,8 @@ impl Game {
                 self.state.timing.fall_interval = 0.05; // Increase fall speed when dropping
             }
             InputState::None => {
-                self.state.timing.fall_interval = 0.5; // Reset fall speed
+                self.state.timing.fall_interval =
+                    LEVEL_CONFIGS[self.state.level.current].fall_interval;
             }
         }
     }
@@ -274,14 +287,30 @@ impl Game {
             }
         }
 
-        // Update score based on number of lines cleared
-        let lines_cleared = self.state.board.flashing_lines.len();
-        if lines_cleared > 0 {
-            let points = 100 * (1 << (lines_cleared - 1));
-            self.state.score.current += points;
-            self.state.score.highest = self.state.score.current.max(self.state.score.current);
-        }
-
         self.state.board.cells = new_board;
+    }
+
+    fn update_level(&mut self) {
+        let current_level = self.state.level.current;
+        let current_config = &LEVEL_CONFIGS[current_level];
+        let next_level = current_level + 1;
+
+        if self.state.level.total_lines_cleared >= current_config.lines_required
+            && current_level < LEVEL_CONFIGS.len() - 1
+        {
+            self.state.level.current = next_level;
+        }
+    }
+
+    fn calculate_score(&self, lines_cleared: u32) -> u32 {
+        let base_score = match lines_cleared {
+            1 => 100,
+            2 => 300,
+            3 => 500,
+            4 => 800,
+            _ => 0,
+        };
+
+        (base_score as f32 * LEVEL_CONFIGS[self.state.level.current].score_multiplier) as u32
     }
 }

@@ -1,6 +1,7 @@
 mod dummy;
 mod game;
 mod input;
+mod level;
 mod renderer;
 mod screen;
 mod state;

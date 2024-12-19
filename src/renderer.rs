@@ -1,7 +1,7 @@
 use crate::{
     game::{HEIGHT, WIDTH},
     screen::ScreenConfig,
-    state::{Board, GameState, GameStatus, PieceState},
+    state::{Board, GameState, GameStatus, LevelState, PieceState},
 };
 use macroquad::prelude::*;
 
@@ -51,10 +51,12 @@ impl Renderer {
                 self.draw_placed_pieces(&state.board.cells, &state.board.flashing_lines);
                 self.draw_current_piece(&state.piece);
                 self.draw_score(state.score.current);
+                self.draw_level_info(&state.level);
             }
             GameStatus::GameOver => {
                 self.draw_placed_pieces(&state.board.cells, &state.board.flashing_lines);
                 self.draw_game_over(state.score.current, state.score.highest);
+                self.draw_level_info(&state.level);
             }
         }
 
@@ -308,6 +310,17 @@ impl Renderer {
                 self.draw_block(draw_x as f32, draw_y as f32, piece.typ.color());
             }
         }
+    }
+    fn draw_level_info(&mut self, level: &LevelState) {
+        let level_text = format!("Level: {}", level.current + 1);
+
+        let padding: f32 = 10.0;
+        let font_size = self.get_dynamic_font_size();
+        let text_dims = measure_text(&level_text, None, font_size as u16, 1.0);
+        let x = screen_width() - text_dims.width - padding;
+        let y = text_dims.height + padding;
+
+        draw_text(&level_text, x, y, font_size, WHITE);
     }
 
     fn draw_debug_info(&mut self) {

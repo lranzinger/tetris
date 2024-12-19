@@ -39,6 +39,11 @@ pub struct ScoreState {
     pub highest: u32,
 }
 
+pub struct LevelState {
+    pub current: usize,
+    pub total_lines_cleared: u32,
+}
+
 pub struct GameState {
     pub status: GameStatus,
     pub score: ScoreState,
@@ -46,6 +51,7 @@ pub struct GameState {
     pub board: BoardState,
     pub piece: PieceState,
     pub timing: TimingState,
+    pub level: LevelState,
 }
 
 impl GameState {
@@ -71,9 +77,13 @@ impl GameState {
             timing: TimingState {
                 fall_timer: 0.0,
                 move_timer: 0.0,
-                fall_interval: 0.5,
+                fall_interval: 0.48,
                 move_interval: 0.1,
                 line_clear_timer: 0.0,
+            },
+            level: LevelState {
+                current: 0,
+                total_lines_cleared: 0,
             },
         }
     }
