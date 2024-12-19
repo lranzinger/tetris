@@ -18,7 +18,7 @@ pub struct PieceState {
     pub typ: Tetromino,
     pub position: (i32, i32),
     pub rotated: Vec<(i32, i32)>,
-    pub rotation: i32,
+    pub rotation: RotationState,
 }
 
 pub struct TimingState {
@@ -50,6 +50,7 @@ pub struct GameState {
 
 impl GameState {
     pub fn new() -> Self {
+        let initial_piece = Tetromino::random();
         Self {
             status: GameStatus::Start,
             score: ScoreState {
@@ -62,10 +63,10 @@ impl GameState {
                 flashing_lines: Vec::new(),
             },
             piece: PieceState {
-                typ: Tetromino::random(),
-                rotated: vec![(0, 0)],
+                typ: initial_piece,
+                rotated: initial_piece.shape(),
                 position: (WIDTH / 2 - 2, -1),
-                rotation: 0,
+                rotation: RotationState::Zero,
             },
             timing: TimingState {
                 fall_timer: 0.0,
@@ -74,6 +75,25 @@ impl GameState {
                 move_interval: 0.1,
                 line_clear_timer: 0.0,
             },
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub enum RotationState {
+    Zero = 0,
+    Right = 1,
+    Two = 2,
+    Left = 3,
+}
+
+impl RotationState {
+    pub fn next(&self) -> Self {
+        match self {
+            RotationState::Zero => RotationState::Right,
+            RotationState::Right => RotationState::Two,
+            RotationState::Two => RotationState::Left,
+            RotationState::Left => RotationState::Zero,
         }
     }
 }

@@ -1,7 +1,7 @@
 use crate::{
     input::{InputHandler, InputState},
     renderer::Renderer,
-    state::{GameState, GameStatus},
+    state::{GameState, GameStatus, RotationState},
     tetromino::Tetromino,
 };
 use macroquad::prelude::*;
@@ -31,7 +31,7 @@ impl Game {
             - shape.iter().map(|(x, _)| x).min().unwrap()
             + 1;
         self.state.piece.position = (WIDTH / 2 - piece_width / 2, -1);
-        self.state.piece.rotation = 0; // Reset rotation state
+        self.state.piece.rotation = RotationState::Zero;
         self.state.piece.rotated = self.get_rotated_shape();
     }
 
@@ -44,8 +44,8 @@ impl Game {
 
         // Apply rotation around center
         match self.state.piece.rotation {
-            0 => shape,
-            1 => shape
+            RotationState::Zero => shape,
+            RotationState::Right => shape
                 .iter()
                 .map(|&(x, y)| {
                     let dx = x - center_x;
@@ -53,7 +53,7 @@ impl Game {
                     (center_x - dy, center_y + dx)
                 })
                 .collect(),
-            2 => shape
+            RotationState::Two => shape
                 .iter()
                 .map(|&(x, y)| {
                     let dx = x - center_x;
@@ -61,7 +61,7 @@ impl Game {
                     (center_x - dx, center_y - dy)
                 })
                 .collect(),
-            3 => shape
+            RotationState::Left => shape
                 .iter()
                 .map(|&(x, y)| {
                     let dx = x - center_x;
@@ -69,7 +69,6 @@ impl Game {
                     (center_x + dy, center_y - dx)
                 })
                 .collect(),
-            _ => shape,
         }
     }
 
@@ -234,7 +233,7 @@ impl Game {
 
         let offsets = [0, -1, 1, -2, 2];
 
-        let next_rotation = (self.state.piece.rotation + 1) % 4;
+        let next_rotation = self.state.piece.rotation.next();
         let temp_rotation = self.state.piece.rotation;
         self.state.piece.rotation = next_rotation;
         self.state.piece.rotated = self.get_rotated_shape();
