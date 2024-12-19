@@ -156,9 +156,6 @@ impl Game {
                 // Remove lines after flashing
                 self.remove_flashing_lines();
                 self.state.board.flashing_lines.clear();
-            } else {
-                // Skip further updates during line clear animation
-                return;
             }
         }
 
@@ -190,11 +187,6 @@ impl Game {
     }
 
     fn handle_input(&mut self, input: InputState) {
-        // Ignore input during lock-in or line clear animation
-        if !self.state.board.flashing_lines.is_empty() {
-            return;
-        }
-
         match input {
             InputState::MoveLeft => {
                 if self.state.timing.move_timer >= self.state.timing.move_interval {
