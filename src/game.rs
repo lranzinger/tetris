@@ -285,11 +285,11 @@ impl Game {
     fn update_level(&mut self) {
         let current_level = self.state.level.current;
         let current_config = &LEVEL_CONFIGS[current_level];
-        let next_level = current_level + 1;
 
         if self.state.level.total_lines_cleared >= current_config.lines_required
             && current_level < LEVEL_CONFIGS.len() - 1
         {
+            let next_level = current_level + 1;
             self.state.level.current = next_level;
         }
     }
