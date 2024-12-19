@@ -106,35 +106,32 @@ impl InputHandler {
         const HOLD_THRESHOLD: f64 = 0.1;
         const SWIPE_COOLDOWN: f64 = 0.2;
 
-        let touches = touches();
-
-        // No touches - reset state
-        if touches.is_empty() {
+        // Handle lost focus or anomaly
+        if !is_mouse_button_down(MouseButton::Left) && !is_mouse_button_pressed(MouseButton::Left) {
             self.reset_touch_state();
             return InputState::None;
         }
 
-        // Get primary touch
-        let touch = &touches[0];
-
-        // New touch started
-        if touch.phase == TouchPhase::Started {
+        // New touch/press - reset and initialize
+        if is_mouse_button_pressed(MouseButton::Left) {
             self.reset_touch_state();
-            self.touch_start = Some((touch.position.x, touch.position.y));
+            self.touch_start = Some(mouse_position());
             self.touch_start_time = Some(current_time);
-            self.touch_last_pos = Some((touch.position.x, touch.position.y));
+            self.touch_last_pos = Some(mouse_position());
             return InputState::None;
         }
 
-        // Process touch movement
+        // Only process if we have valid start state
         if let (Some(start_pos), Some(start_time), Some(_)) =
             (self.touch_start, self.touch_start_time, self.touch_last_pos)
         {
-            let dx = touch.position.x - start_pos.0;
-            let dy = touch.position.y - start_pos.1;
+            let (current_x, current_y) = mouse_position();
+            let dx = current_x - start_pos.0;
+            let dy = current_y - start_pos.1;
 
-            // Timeout check
+            // Prevent stuck states with timeout
             if current_time - start_time > 2.0 {
+                // 2 second timeout
                 self.reset_touch_state();
                 return InputState::None;
             }
@@ -165,9 +162,9 @@ impl InputHandler {
             {
                 return InputState::Drop;
             }
-
-            // Update last position
-            self.touch_last_pos = Some((touch.position.x, touch.position.y));
+        } else {
+            // Invalid state detected, reset
+            self.reset_touch_state();
         }
 
         InputState::None
