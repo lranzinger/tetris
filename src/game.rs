@@ -108,6 +108,7 @@ impl Game {
             // Calculate scrore
             let score = self.calculate_score(num_of_lines_to_clear);
             self.state.score.current += score;
+            self.state.score.highest = self.state.score.highest.max(self.state.score.current);
             self.state.level.total_lines_cleared += num_of_lines_to_clear;
 
             // Update level
