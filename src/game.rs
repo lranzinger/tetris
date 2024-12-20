@@ -190,20 +190,16 @@ impl Game {
     fn handle_input(&mut self, input: InputState) {
         match input {
             InputState::MoveLeft => {
-                if self.state.timing.move_timer >= self.state.timing.move_interval {
-                    if self.can_move(-1, 0) {
-                        self.state.piece.position.0 -= 1;
-                    }
-                    self.state.timing.move_timer = 0.0;
+                if self.can_move(-1, 0) {
+                    self.state.piece.position.0 -= 1;
                 }
+                self.state.timing.move_timer = 0.0;
             }
             InputState::MoveRight => {
-                if self.state.timing.move_timer >= self.state.timing.move_interval {
-                    if self.can_move(1, 0) {
-                        self.state.piece.position.0 += 1;
-                    }
-                    self.state.timing.move_timer = 0.0;
+                if self.can_move(1, 0) {
+                    self.state.piece.position.0 += 1;
                 }
+                self.state.timing.move_timer = 0.0;
             }
             InputState::Rotate => {
                 self.try_rotation();
