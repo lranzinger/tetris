@@ -32,6 +32,7 @@ jobs:
           mkdir -p ./deploy
           cp ./target/wasm32-unknown-unknown/release/blocks.wasm ./deploy/
           cp index.html ./deploy/
+          cp macroquad.js ./deploy/
 
       - name: Optimize binary
         run: wasm-opt -O3 -o ./deploy/blocks.wasm ./deploy/blocks.wasm
