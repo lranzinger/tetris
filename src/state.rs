@@ -3,6 +3,7 @@ use macroquad::color::Color;
 use crate::{
     dummy::DummyBoard,
     game::{HEIGHT, WIDTH},
+    storage,
     tetromino::Tetromino,
 };
 
@@ -60,7 +61,7 @@ impl GameState {
             status: GameStatus::Start,
             score: ScoreState {
                 current: 0,
-                highest: 0,
+                highest: storage::get_high_score(),
             },
             dummy_board: Some(DummyBoard::new()),
             board: BoardState {

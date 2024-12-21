@@ -3,6 +3,7 @@ use crate::{
     level::LEVEL_CONFIGS,
     renderer::Renderer,
     state::{GameState, GameStatus, RotationState},
+    storage,
     tetromino::Tetromino,
 };
 use macroquad::prelude::*;
@@ -183,6 +184,11 @@ impl Game {
         self.state.piece.rotated = self.get_rotated_shape();
 
         if self.is_game_over() {
+            let last_highscore = storage::get_high_score();
+            let new_highscore = self.state.score.highest;
+            if new_highscore > last_highscore {
+                storage::update_high_score(new_highscore);
+            }
             self.state.status = GameStatus::GameOver;
         }
     }

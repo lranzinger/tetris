@@ -5,6 +5,7 @@ mod level;
 mod renderer;
 mod screen;
 mod state;
+mod storage;
 mod tetromino;
 
 use game::Game;
