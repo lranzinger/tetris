@@ -1,15 +1,30 @@
 {
   "version": "2.0.0",
   "tasks": [
-      {
-          "label": "Build WASM",
-          "type": "shell",
-          "command": "${workspaceFolder}/build.sh",
-          "group": {
-              "kind": "build",
-              "isDefault": true
-          },
-          "problemMatcher": ["$rustc"]
+    {
+      "label": "Build WASM (Debug)",
+      "type": "shell",
+      "command": "${workspaceFolder}/build.sh debug",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$rustc"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
       }
+    },
+    {
+      "label": "Build WASM (Release)",
+      "type": "shell",
+      "command": "${workspaceFolder}/build.sh release",
+      "group": "build",
+      "problemMatcher": ["$rustc"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    }
   ]
 }
