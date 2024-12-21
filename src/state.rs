@@ -26,7 +26,6 @@ pub struct TimingState {
     pub fall_interval: f32,
     pub fall_timer: f32,
     pub line_clear_timer: f32,
-    pub move_timer: f32,
 }
 
 pub struct BoardState {
@@ -76,7 +75,6 @@ impl GameState {
             },
             timing: TimingState {
                 fall_timer: 0.0,
-                move_timer: 0.0,
                 fall_interval: 0.48,
                 line_clear_timer: 0.0,
             },

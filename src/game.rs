@@ -163,7 +163,6 @@ impl Game {
 
         // Update timers
         self.state.timing.fall_timer += delta;
-        self.state.timing.move_timer += delta;
 
         // Handle automatic piece falling
         if self.state.timing.fall_timer >= self.state.timing.fall_interval {
@@ -199,17 +198,14 @@ impl Game {
                 if self.can_move(-1, 0) {
                     self.state.piece.position.0 -= 1;
                 }
-                self.state.timing.move_timer = 0.0;
             }
             InputState::MoveRight => {
                 if self.can_move(1, 0) {
                     self.state.piece.position.0 += 1;
                 }
-                self.state.timing.move_timer = 0.0;
             }
             InputState::Rotate => {
                 self.try_rotation();
-                self.state.timing.move_timer = 0.0;
             }
             InputState::Drop => {
                 self.state.timing.fall_interval = 0.05; // Increase fall speed when dropping

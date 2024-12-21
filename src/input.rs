@@ -9,22 +9,37 @@ pub enum InputState {
     Drop,
 }
 
-pub struct InputHandler {
-    touch_start: Option<(f32, f32)>,
-    touch_start_time: Option<f64>,
-    key_hold_start: Option<(KeyCode, f64)>,
-    last_move_time: f64,
+#[derive(Debug, Copy, Clone)]
+pub struct TouchPosition {
+    x: f32,
+    y: f32,
 }
 
-const HOLD_THRESHOLD: f64 = 0.2;
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
+pub struct Time(f64);
+
+impl std::ops::Sub for Time {
+    type Output = Time;
+
+    fn sub(self, other: Time) -> Time {
+        Time(self.0 - other.0)
+    }
+}
+
+pub struct InputHandler {
+    touch_start: Option<(TouchPosition, Time)>,
+    last_move_time: Time,
+    key_hold_start: Option<(KeyCode, Time)>,
+}
+
+const HOLD_THRESHOLD: Time = Time(0.2);
 
 impl InputHandler {
     pub fn new() -> Self {
         Self {
             touch_start: None,
-            touch_start_time: None,
+            last_move_time: Time(0.0),
             key_hold_start: None,
-            last_move_time: 0.0,
         }
     }
 
@@ -43,8 +58,8 @@ impl InputHandler {
     }
 
     fn handle_keyboard(&mut self) -> InputState {
-        const MOVE_COOLDOWN: f64 = 0.1; // 100ms between moves
-        let current_time = get_time();
+        const MOVE_COOLDOWN: Time = Time(0.1);
+        let current_time = Time(get_time());
 
         // Check for key press
         for key in [
@@ -98,24 +113,29 @@ impl InputHandler {
         const SWIPE_THRESHOLD: f32 = 30.0;
 
         let touches = touches();
-        let current_time = get_time();
+        let current_time = Time(get_time());
 
         // Reset if no touches
         if touches.is_empty() {
-            self.reset_touch_state();
+            self.touch_start = None;
             return InputState::None;
         }
 
         let touch = &touches[0];
         match touch.phase {
             TouchPhase::Started => {
-                self.touch_start = Some((touch.position.x, touch.position.y));
-                self.touch_start_time = Some(current_time);
+                self.touch_start = Some((
+                    TouchPosition {
+                        x: touch.position.x,
+                        y: touch.position.y,
+                    },
+                    current_time,
+                ));
             }
             TouchPhase::Moved => {
-                if let Some((start_x, start_y)) = self.touch_start {
-                    let dx = touch.position.x - start_x;
-                    let dy = touch.position.y - start_y;
+                if let Some((start_pos, _)) = self.touch_start {
+                    let dx = touch.position.x - start_pos.x;
+                    let dy = touch.position.y - start_pos.y;
 
                     if dx.abs() > SWIPE_THRESHOLD {
                         self.touch_start = None;
@@ -133,14 +153,14 @@ impl InputHandler {
                 }
             }
             TouchPhase::Stationary => {
-                if let Some(start_time) = self.touch_start_time {
+                if let Some((_, start_time)) = self.touch_start {
                     if current_time - start_time > HOLD_THRESHOLD {
                         return InputState::Drop;
                     }
                 }
             }
             TouchPhase::Ended | TouchPhase::Cancelled => {
-                self.reset_touch_state();
+                self.touch_start = None;
                 return InputState::None;
             }
         }
@@ -149,12 +169,7 @@ impl InputHandler {
     }
 
     pub fn reset(&mut self) {
-        self.key_hold_start = None;
-        self.reset_touch_state();
-    }
-
-    fn reset_touch_state(&mut self) {
         self.touch_start = None;
-        self.touch_start_time = None;
+        self.key_hold_start = None;
     }
 }
