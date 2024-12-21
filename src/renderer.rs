@@ -138,6 +138,7 @@ impl Renderer {
         // Draw instructions
         let instructions = [
             "Links/Rechts: Bewegen",
+            "Bewegen+Halten: Schnell bewegen",
             "Hoch: Drehen",
             "Halten: Fallen lassen",
         ];
@@ -342,7 +343,7 @@ impl Renderer {
         let font_size = self.get_dynamic_font_size();
         let text_dims = measure_text(&fps_text, None, font_size as u16, 1.0);
         let x = screen_width() - text_dims.width - padding;
-        let y = text_dims.height + padding;
+        let y = 2.5 * (text_dims.height + padding);
 
         draw_text(&fps_text, x, y, font_size, WHITE);
     }

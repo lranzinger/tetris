@@ -1,6 +1,6 @@
 use macroquad::prelude::*;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Copy, Clone)]
 pub enum InputState {
     None,
     MoveLeft,
@@ -30,6 +30,9 @@ pub struct InputHandler {
     touch_start: Option<(TouchPosition, Time)>,
     last_move_time: Time,
     key_hold_start: Option<(KeyCode, Time)>,
+    is_moving: bool,
+    is_dropping: bool,
+    move_direction: Option<InputState>,
 }
 
 const HOLD_THRESHOLD: Time = Time(0.2);
@@ -40,6 +43,9 @@ impl InputHandler {
             touch_start: None,
             last_move_time: Time(0.0),
             key_hold_start: None,
+            is_moving: false,
+            is_dropping: false,
+            move_direction: None,
         }
     }
 
@@ -111,13 +117,13 @@ impl InputHandler {
 
     fn handle_touch(&mut self) -> InputState {
         const SWIPE_THRESHOLD: f32 = 30.0;
+        const MOVE_COOLDOWN_SWIPE: Time = Time(0.2);
+        const MOVE_COOLDOWN_HOLD: Time = Time(0.1);
 
         let touches = touches();
         let current_time = Time(get_time());
 
-        // Reset if no touches
         if touches.is_empty() {
-            self.touch_start = None;
             return InputState::None;
         }
 
@@ -133,19 +139,28 @@ impl InputHandler {
                 ));
             }
             TouchPhase::Moved => {
+                if self.is_dropping {
+                    return InputState::Drop;
+                }
                 if let Some((start_pos, _)) = self.touch_start {
                     let dx = touch.position.x - start_pos.x;
-                    let dy = touch.position.y - start_pos.y;
-
                     if dx.abs() > SWIPE_THRESHOLD {
-                        self.touch_start = None;
-                        return if dx > 0.0 {
-                            InputState::MoveRight
-                        } else {
-                            InputState::MoveLeft
-                        };
+                        let elapsed = current_time - self.last_move_time;
+                        if elapsed > MOVE_COOLDOWN_SWIPE {
+                            self.last_move_time = current_time;
+                            self.is_moving = true;
+                            let direction = if dx > 0.0 {
+                                InputState::MoveRight
+                            } else {
+                                InputState::MoveLeft
+                            };
+                            self.move_direction = Some(direction);
+                            return direction;
+                        }
+                        return InputState::None;
                     }
 
+                    let dy = touch.position.y - start_pos.y;
                     if dy < -SWIPE_THRESHOLD {
                         self.touch_start = None;
                         return InputState::Rotate;
@@ -153,23 +168,37 @@ impl InputHandler {
                 }
             }
             TouchPhase::Stationary => {
-                if let Some((_, start_time)) = self.touch_start {
+                if self.is_moving {
+                    let elapsed = current_time - self.last_move_time;
+                    if elapsed > MOVE_COOLDOWN_HOLD {
+                        self.last_move_time = current_time;
+                        return self.move_direction.unwrap_or(InputState::None);
+                    }
+                } else if let Some((_, start_time)) = self.touch_start {
                     if current_time - start_time > HOLD_THRESHOLD {
+                        self.is_dropping = true;
                         return InputState::Drop;
                     }
                 }
             }
             TouchPhase::Ended | TouchPhase::Cancelled => {
                 self.touch_start = None;
+                self.reset_movement();
                 return InputState::None;
             }
         }
-
         InputState::None
+    }
+
+    fn reset_movement(&mut self) {
+        self.is_moving = false;
+        self.is_dropping = false;
+        self.move_direction = None;
     }
 
     pub fn reset(&mut self) {
         self.touch_start = None;
         self.key_hold_start = None;
+        self.reset_movement();
     }
 }
