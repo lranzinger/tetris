@@ -22,6 +22,7 @@ struct ButtonBounds {
 pub struct Renderer {
     pub screen: ScreenConfig,
     last_fps_update: f64,
+    last_config_update: f64,
     current_fps: i32,
 }
 
@@ -30,13 +31,18 @@ impl Renderer {
         Self {
             screen: ScreenConfig::new(),
             last_fps_update: 0.0,
+            last_config_update: 0.0,
             current_fps: 0,
         }
     }
 
     pub fn draw(&mut self, state: &GameState) {
-        // Update screen config each frame for dynamic resizing
-        self.screen = ScreenConfig::new();
+        // Update screen config each second for dynamic resizing
+        let current_time = get_time();
+        if current_time - self.last_config_update >= 1.0 {
+            self.screen = ScreenConfig::new();
+            self.last_config_update = current_time;
+        }
 
         self.draw_game_field();
 
@@ -185,6 +191,7 @@ impl Renderer {
             WHITE,
         );
     }
+
     fn draw_overlay_screen(&mut self, title: &str, button_text: &str) {
         let font_size = self.get_dynamic_font_size();
         let button_size = self.get_button_font_size();
