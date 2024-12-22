@@ -7,6 +7,7 @@ use crate::{
     tetromino::Tetromino,
 };
 use macroquad::prelude::*;
+use smallvec::SmallVec;
 
 pub const WIDTH: i32 = 10;
 pub const HEIGHT: i32 = 20;
@@ -90,11 +91,14 @@ impl Game {
     }
 
     fn clear_lines(&mut self) {
-        let mut lines_to_clear = Vec::new();
+        let mut lines_to_clear = SmallVec::new();
 
         // Identify full lines
-        for y in 0..HEIGHT as usize {
-            if self.state.board.cells[y].iter().all(|&cell| cell.is_some()) {
+        for y in 0..HEIGHT as u8 {
+            if self.state.board.cells[y as usize]
+                .iter()
+                .all(|&cell| cell.is_some())
+            {
                 lines_to_clear.push(y);
             }
         }
@@ -271,9 +275,9 @@ impl Game {
         let mut new_row = HEIGHT as usize - 1;
 
         // Copy the board, skipping the lines that were cleared
-        for y in (0..HEIGHT as usize).rev() {
+        for y in (0..HEIGHT as u8).rev() {
             if !self.state.board.flashing_lines.contains(&y) {
-                new_board[new_row] = self.state.board.cells[y];
+                new_board[new_row] = self.state.board.cells[y as usize];
                 new_row = new_row.saturating_sub(1);
             }
         }

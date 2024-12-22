@@ -285,12 +285,11 @@ impl Renderer {
         }
     }
 
-    fn draw_placed_pieces(&self, cells: &Board, flashing_lines: &[usize]) {
-        for y in 0..HEIGHT {
-            let y_usize = y as usize;
-            let is_flashing = flashing_lines.contains(&y_usize);
-            for x in 0..WIDTH {
-                if let Some(color) = cells[y_usize][x as usize] {
+    fn draw_placed_pieces(&self, cells: &Board, flashing_lines: &[u8]) {
+        for y in 0..HEIGHT as u8 {
+            let is_flashing = flashing_lines.contains(&y);
+            for x in 0..WIDTH as u8 {
+                if let Some(color) = cells[y as usize][x as usize] {
                     let draw_color = if is_flashing && ((get_time() * 10.0) as i32 % 2 == 0) {
                         // Flashing effect: alternate between white and original color
                         WHITE

@@ -1,4 +1,5 @@
 use macroquad::color::Color;
+use smallvec::SmallVec;
 
 use crate::{
     dummy::DummyBoard,
@@ -30,7 +31,7 @@ pub struct TimingState {
 
 pub struct BoardState {
     pub cells: Board,
-    pub flashing_lines: Vec<usize>,
+    pub flashing_lines: SmallVec<[u8; 4]>,
 }
 
 pub struct ScoreState {
@@ -65,7 +66,7 @@ impl GameState {
             dummy_board: Some(DummyBoard::new()),
             board: BoardState {
                 cells: [[None; WIDTH as usize]; HEIGHT as usize],
-                flashing_lines: Vec::new(),
+                flashing_lines: SmallVec::new(),
             },
             piece: PieceState {
                 typ: initial_piece,
