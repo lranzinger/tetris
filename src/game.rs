@@ -184,8 +184,6 @@ impl Game {
         let input_state = self.input.update();
         self.handle_input(input_state);
 
-        self.state.piece.rotated = self.get_rotated_shape();
-
         if self.is_game_over() {
             let last_highscore = storage::get_high_score();
             let new_highscore = self.state.score.highest;
@@ -221,9 +219,9 @@ impl Game {
         }
     }
 
-    fn try_rotation(&mut self) -> bool {
+    fn try_rotation(&mut self) {
         if self.state.piece.typ == Tetromino::O {
-            return false;
+            return;
         }
 
         let original_x = self.state.piece.position.0;
@@ -237,7 +235,7 @@ impl Game {
         for &offset in &offsets {
             self.state.piece.position.0 = original_x + offset;
             if self.is_valid_position() {
-                return true;
+                return;
             }
         }
 
@@ -245,7 +243,6 @@ impl Game {
         self.state.piece.position.0 = original_x;
         self.state.piece.rotation = temp_rotation;
         self.state.piece.rotated = self.get_rotated_shape();
-        false
     }
 
     fn is_valid_position(&self) -> bool {
