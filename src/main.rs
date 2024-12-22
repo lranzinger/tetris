@@ -1,4 +1,5 @@
 mod dummy;
+mod font;
 mod game;
 mod input;
 mod level;

@@ -1,4 +1,5 @@
 use crate::{
+    font::FontCache,
     game::{HEIGHT, WIDTH},
     screen::ScreenConfig,
     state::{Board, GameState, GameStatus, LevelState, PieceState},
@@ -21,6 +22,7 @@ struct ButtonBounds {
 
 pub struct Renderer {
     pub screen: ScreenConfig,
+    font: FontCache,
     last_fps_update: f64,
     last_config_update: f64,
     current_fps: i32,
@@ -30,6 +32,7 @@ impl Renderer {
     pub fn new() -> Self {
         Self {
             screen: ScreenConfig::new(),
+            font: FontCache::new(),
             last_fps_update: 0.0,
             last_config_update: 0.0,
             current_fps: 0,
@@ -41,6 +44,7 @@ impl Renderer {
         let current_time = get_time();
         if current_time - self.last_config_update >= 1.0 {
             self.screen = ScreenConfig::new();
+            self.font.update();
             self.last_config_update = current_time;
         }
 
@@ -123,20 +127,8 @@ impl Renderer {
         }
     }
 
-    fn get_dynamic_font_size(&self) -> f32 {
-        // Base font size on screen height
-        let base_size = screen_height() * 0.05; // 5% of screen height
-        base_size.max(20.0) // Minimum size of 20
-    }
-
-    fn get_button_font_size(&self) -> f32 {
-        let base_size = self.get_dynamic_font_size() * 0.8; // Slightly smaller than main text
-        base_size.max(16.0) // Minimum size of 16
-    }
-
     fn draw_start_screen(&mut self) {
-        let font_size = self.get_dynamic_font_size();
-        let instruction_size = font_size * 0.8;
+        let instruction_size = self.font.stats_size;
         let spacing = screen_height() * 0.05; // 5% of screen height for spacing
 
         self.draw_overlay_screen(START_TEXT, START_BUTTON);
@@ -166,7 +158,7 @@ impl Renderer {
     fn draw_game_over(&mut self, score: u32, high_score: u32) {
         self.draw_overlay_screen(GAMEOVER_TEXT, GAMEOVER_BUTTON);
 
-        let font_size = self.get_dynamic_font_size() * 0.8;
+        let font_size = self.font.stats_size;
         let spacing = screen_height() * 0.1; // 10% of screen height for spacing
 
         // Draw score
@@ -193,8 +185,8 @@ impl Renderer {
     }
 
     fn draw_overlay_screen(&mut self, title: &str, button_text: &str) {
-        let font_size = self.get_dynamic_font_size();
-        let button_size = self.get_button_font_size();
+        let font_size = self.font.size;
+        let button_size = self.font.button_size;
 
         // Draw overlay
         let overlay_color = Color::new(0.0, 0.0, 0.0, 0.7);
@@ -227,7 +219,7 @@ impl Renderer {
             return false;
         }
 
-        let button_size = self.get_button_font_size();
+        let button_size = self.font.button_size;
         let button_text = match status {
             GameStatus::Start => START_BUTTON,
             GameStatus::GameOver => GAMEOVER_BUTTON,
@@ -244,7 +236,7 @@ impl Renderer {
 
     fn draw_score(&self, current_score: u32) {
         let score_text = format!("{} {}", SCORE_TEXT, current_score);
-        let font_size = self.get_dynamic_font_size();
+        let font_size = self.font.stats_size;
         let padding: f32 = 10.0;
 
         let text_dims = measure_text(&score_text, None, font_size as u16, 1.0);
@@ -322,7 +314,7 @@ impl Renderer {
         let level_text = format!("Level: {}", level.current + 1);
 
         let padding: f32 = 10.0;
-        let font_size = self.get_dynamic_font_size();
+        let font_size = self.font.stats_size;
         let text_dims = measure_text(&level_text, None, font_size as u16, 1.0);
         let x = screen_width() - text_dims.width - padding;
         let y = text_dims.height + padding;
@@ -346,7 +338,7 @@ impl Renderer {
         let fps_text = format!("FPS: {}", self.current_fps);
         let padding: f32 = 10.0;
 
-        let font_size = self.get_dynamic_font_size();
+        let font_size = self.font.debug_size;
         let text_dims = measure_text(&fps_text, None, font_size as u16, 1.0);
         let x = screen_width() - text_dims.width - padding;
         let y = 2.5 * (text_dims.height + padding);
