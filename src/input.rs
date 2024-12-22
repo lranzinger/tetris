@@ -12,7 +12,6 @@ pub enum InputState {
 #[derive(Debug, Copy, Clone)]
 pub struct TouchPosition {
     x: f32,
-    y: f32,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
@@ -117,6 +116,7 @@ impl InputHandler {
 
     fn handle_touch(&mut self) -> InputState {
         const SWIPE_THRESHOLD: f32 = 30.0;
+        const TOUCH_THRESHOLD: Time = Time(0.15);
         const MOVE_COOLDOWN_SWIPE: Time = Time(0.2);
         const MOVE_COOLDOWN_HOLD: Time = Time(0.1);
 
@@ -133,7 +133,6 @@ impl InputHandler {
                 self.touch_start = Some((
                     TouchPosition {
                         x: touch.position.x,
-                        y: touch.position.y,
                     },
                     current_time,
                 ));
@@ -159,12 +158,6 @@ impl InputHandler {
                         }
                         return InputState::None;
                     }
-
-                    let dy = touch.position.y - start_pos.y;
-                    if dy < -SWIPE_THRESHOLD {
-                        self.touch_start = None;
-                        return InputState::Rotate;
-                    }
                 }
             }
             TouchPhase::Stationary => {
@@ -175,13 +168,20 @@ impl InputHandler {
                         return self.move_direction.unwrap_or(InputState::None);
                     }
                 } else if let Some((_, start_time)) = self.touch_start {
-                    if current_time - start_time > HOLD_THRESHOLD {
+                    let touch_duration = current_time - start_time;
+                    if touch_duration > HOLD_THRESHOLD {
                         self.is_dropping = true;
                         return InputState::Drop;
                     }
                 }
             }
             TouchPhase::Ended | TouchPhase::Cancelled => {
+                if let Some((_, start_time)) = self.touch_start {
+                    let touch_duration = current_time - start_time;
+                    if touch_duration < TOUCH_THRESHOLD && !self.is_moving {
+                        return InputState::Rotate;
+                    }
+                }
                 self.touch_start = None;
                 self.reset_movement();
                 return InputState::None;

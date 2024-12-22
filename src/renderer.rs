@@ -139,7 +139,7 @@ impl Renderer {
         let instructions = [
             "Links/Rechts: Bewegen",
             "Bewegen+Halten: Schnell bewegen",
-            "Hoch: Drehen",
+            "Tippen: Drehen",
             "Halten: Fallen lassen",
         ];
 
