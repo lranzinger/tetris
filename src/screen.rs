@@ -1,7 +1,6 @@
 use macroquad::prelude::*;
 
-const WIDTH: i32 = 10;
-const HEIGHT: i32 = 20;
+use crate::game::{HEIGHT, WIDTH};
 
 pub struct ScreenConfig {
     pub block_size: f32,
