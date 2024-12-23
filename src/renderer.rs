@@ -1,5 +1,5 @@
 use crate::{
-    font::FontCache,
+    cache::{FontCache, TextCache},
     game::{HEIGHT, WIDTH},
     screen::ScreenConfig,
     state::{Board, GameState, GameStatus, PieceState},
@@ -11,9 +11,9 @@ const START_TEXT: &str = "";
 const START_BUTTON: &str = "Start";
 const GAMEOVER_TEXT: &str = "Spiel vorbei";
 const GAMEOVER_BUTTON: &str = "Neu starten";
-const SCORE_TEXT: &str = "Score:";
-const LEVEL_TEXT: &str = "Level:";
-const HIGHSCORE_TEXT: &str = "Highscore:";
+pub const SCORE_TEXT: &str = "Score: ";
+pub const LEVEL_TEXT: &str = "Level: ";
+const HIGHSCORE_TEXT: &str = "Highscore: ";
 
 struct ButtonBounds {
     x: f32,
@@ -24,30 +24,30 @@ struct ButtonBounds {
 
 pub struct Renderer {
     pub screen: ScreenConfig,
+    text: TextCache,
     font: FontCache,
     last_fps_update: f64,
-    last_config_update: f64,
     current_fps: i32,
 }
 
 impl Renderer {
     pub fn new() -> Self {
+        let font = FontCache::new();
         Self {
             screen: ScreenConfig::new(),
-            font: FontCache::new(),
+            text: TextCache::new(font.stats_size as u16),
+            font,
             last_fps_update: 0.0,
-            last_config_update: 0.0,
             current_fps: 0,
         }
     }
 
     pub fn draw(&mut self, state: &GameState) {
-        // Update screen config each second for dynamic resizing
-        let current_time = get_time();
-        if current_time - self.last_config_update >= 1.0 {
+        let current_size = (screen_width(), screen_height());
+        if self.screen.size != current_size {
             self.screen = ScreenConfig::new();
             self.font.update();
-            self.last_config_update = current_time;
+            self.text.update(self.font.stats_size as u16);
         }
 
         self.draw_game_field();
@@ -142,9 +142,9 @@ impl Renderer {
     }
 
     fn draw_game_over(&mut self, score: u32, high_score: u32, level: usize) {
-        let score_text = [SCORE_TEXT, &score.to_string()].join(" ");
-        let highscore_text = [HIGHSCORE_TEXT, &high_score.to_string()].join(" ");
-        let level_text = [LEVEL_TEXT, &(level + 1).to_string()].join(" ");
+        let score_text = [SCORE_TEXT, &score.to_string()].join("");
+        let highscore_text = [HIGHSCORE_TEXT, &high_score.to_string()].join("");
+        let level_text = [LEVEL_TEXT, &(level + 1).to_string()].join("");
         let scores = smallvec![
             score_text.as_str(),
             level_text.as_str(),
@@ -231,21 +231,21 @@ impl Renderer {
         let padding = 10.0;
 
         // Score drawing
-        let score_label_dims = measure_text(SCORE_TEXT, None, font_size as u16, 1.0);
-        let score_num_dims = measure_text(&current_score.to_string(), None, font_size as u16, 1.0);
+        let score_num_width = self.text.get_number_width(current_score);
         let x_score = if self.screen.offset_x
-            > score_label_dims.width + score_num_dims.width + padding * 3.0
+            > self.text.score_label_dims.width + score_num_width + padding * 3.0
         {
-            self.screen.offset_x - score_label_dims.width - score_num_dims.width - padding * 2.0
+            self.screen.offset_x
+                - self.text.score_label_dims.width
+                - score_num_width
+                - padding * 2.0
         } else {
             padding
         };
 
         // Level drawing
-        let level_num = (level + 1).to_string();
-        let level_label_dims = measure_text(LEVEL_TEXT, None, font_size as u16, 1.0);
-        let level_num_dims = measure_text(&level_num, None, font_size as u16, 1.0);
-        let total_level_width = level_label_dims.width + level_num_dims.width;
+        let level_num_width = self.text.get_number_width((level + 1) as u32);
+        let total_level_width = self.text.level_label_dims.width + level_num_width;
         let game_field_right = self.screen.offset_x + (WIDTH as f32 * self.screen.block_size);
         let x_level = if screen_width() > game_field_right + total_level_width + padding * 3.0 {
             game_field_right + padding * 2.0
@@ -253,21 +253,21 @@ impl Renderer {
             screen_width() - total_level_width - padding
         };
 
-        let y = level_num_dims.height + padding;
+        let y = self.text.level_label_dims.height + padding;
 
         // Draw texts
         draw_text(SCORE_TEXT, x_score, y, font_size, WHITE);
         draw_text(
             &current_score.to_string(),
-            x_score + score_label_dims.width + 5.0,
+            x_score + self.text.score_label_dims.width,
             y,
             font_size,
             WHITE,
         );
         draw_text(LEVEL_TEXT, x_level, y, font_size, WHITE);
         draw_text(
-            &level_num,
-            x_level + level_label_dims.width + 5.0,
+            &(level + 1).to_string(),
+            x_level + self.text.level_label_dims.width,
             y,
             font_size,
             WHITE,

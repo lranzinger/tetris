@@ -6,6 +6,7 @@ pub struct ScreenConfig {
     pub block_size: f32,
     pub offset_x: f32,
     pub offset_y: f32,
+    pub size: (f32, f32),
 }
 
 impl ScreenConfig {
@@ -26,6 +27,7 @@ impl ScreenConfig {
             block_size,
             offset_x,
             offset_y,
+            size: (screen_width, screen_height),
         }
     }
 }
