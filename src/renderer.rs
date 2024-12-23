@@ -142,9 +142,9 @@ impl Renderer {
     }
 
     fn draw_game_over(&mut self, score: u32, high_score: u32, level: usize) {
-        let score_text = format!("{} {}", SCORE_TEXT, score);
-        let highscore_text = format!("{} {}", HIGHSCORE_TEXT, high_score);
-        let level_text = format!("{} {}", LEVEL_TEXT, level + 1);
+        let score_text = [SCORE_TEXT, &score.to_string()].join(" ");
+        let highscore_text = [HIGHSCORE_TEXT, &high_score.to_string()].join(" ");
+        let level_text = [LEVEL_TEXT, &(level + 1).to_string()].join(" ");
         let scores = smallvec![
             score_text.as_str(),
             level_text.as_str(),
@@ -352,7 +352,7 @@ impl Renderer {
             self.last_fps_update = current_time;
         }
 
-        let fps_text = format!("FPS: {}", self.current_fps);
+        let fps_text = self.current_fps.to_string();
         let padding: f32 = 10.0;
 
         let font_size = self.font.debug_size;
