@@ -2,15 +2,17 @@ use crate::{
     font::FontCache,
     game::{HEIGHT, WIDTH},
     screen::ScreenConfig,
-    state::{Board, GameState, GameStatus, LevelState, PieceState},
+    state::{Board, GameState, GameStatus, PieceState},
 };
 use macroquad::prelude::*;
+use smallvec::{smallvec, SmallVec};
 
 const START_TEXT: &str = "";
 const START_BUTTON: &str = "Start";
 const GAMEOVER_TEXT: &str = "Spiel vorbei";
 const GAMEOVER_BUTTON: &str = "Neu starten";
 const SCORE_TEXT: &str = "Score:";
+const LEVEL_TEXT: &str = "Level:";
 const HIGHSCORE_TEXT: &str = "Highscore:";
 
 struct ButtonBounds {
@@ -60,13 +62,15 @@ impl Renderer {
             GameStatus::Playing => {
                 self.draw_placed_pieces(&state.board.cells, &state.board.flashing_lines);
                 self.draw_current_piece(&state.piece);
-                self.draw_score(state.score.current);
-                self.draw_level_info(&state.level);
+                self.draw_stats(state.score.current, state.level.current);
             }
             GameStatus::GameOver => {
                 self.draw_placed_pieces(&state.board.cells, &state.board.flashing_lines);
-                self.draw_game_over(state.score.current, state.score.highest);
-                self.draw_level_info(&state.level);
+                self.draw_game_over(
+                    state.score.current,
+                    state.score.highest,
+                    state.level.current,
+                );
             }
         }
 
@@ -128,90 +132,78 @@ impl Renderer {
     }
 
     fn draw_start_screen(&mut self) {
-        let instruction_size = self.font.stats_size;
-        let spacing = screen_height() * 0.05; // 5% of screen height for spacing
-
-        self.draw_overlay_screen(START_TEXT, START_BUTTON);
-
-        // Draw instructions
-        let instructions = [
+        let instructions = smallvec![
             "Links/Rechts: Bewegen",
-            "Bewegen+Halten: Schnell bewegen",
             "Tippen: Drehen",
             "Halten: Fallen lassen",
         ];
 
-        let mut y_offset = screen_height() / 2.0 + spacing * 2.0;
-        for instruction in instructions {
-            let text_dims = measure_text(instruction, None, instruction_size as u16, 1.0);
-            draw_text(
-                instruction,
-                screen_width() / 2.0 - text_dims.width / 2.0,
-                y_offset,
-                instruction_size,
-                WHITE,
-            );
-            y_offset += spacing;
-        }
+        self.draw_overlay_screen(START_TEXT, START_BUTTON, instructions);
     }
 
-    fn draw_game_over(&mut self, score: u32, high_score: u32) {
-        self.draw_overlay_screen(GAMEOVER_TEXT, GAMEOVER_BUTTON);
-
-        let font_size = self.font.stats_size;
-        let spacing = screen_height() * 0.1; // 10% of screen height for spacing
-
-        // Draw score
+    fn draw_game_over(&mut self, score: u32, high_score: u32, level: usize) {
         let score_text = format!("{} {}", SCORE_TEXT, score);
-        let text_dims = measure_text(&score_text, None, font_size as u16, 1.0);
-        draw_text(
-            &score_text,
-            screen_width() / 2.0 - text_dims.width / 2.0,
-            screen_height() / 2.0 + spacing,
-            font_size,
-            WHITE,
-        );
-
-        // Draw highscore
         let highscore_text = format!("{} {}", HIGHSCORE_TEXT, high_score);
-        let text_dims = measure_text(&highscore_text, None, font_size as u16, 1.0);
-        draw_text(
-            &highscore_text,
-            screen_width() / 2.0 - text_dims.width / 2.0,
-            screen_height() / 2.0 + spacing * 1.5,
-            font_size,
-            WHITE,
-        );
+        let level_text = format!("{} {}", LEVEL_TEXT, level + 1);
+        let scores = smallvec![
+            score_text.as_str(),
+            level_text.as_str(),
+            highscore_text.as_str(),
+        ];
+
+        self.draw_overlay_screen(GAMEOVER_TEXT, GAMEOVER_BUTTON, scores);
     }
 
-    fn draw_overlay_screen(&mut self, title: &str, button_text: &str) {
-        let font_size = self.font.size;
-        let button_size = self.font.button_size;
+    fn draw_overlay_screen(
+        &mut self,
+        title: &str,
+        button_text: &str,
+        subtext: SmallVec<[&str; 3]>,
+    ) {
+        let screen_w = screen_width();
+        let screen_h = screen_height();
+        let center_x = screen_w / 2.0;
+        let center_y = screen_h / 2.0;
+        let spacing = screen_h * 0.05;
 
-        // Draw overlay
-        let overlay_color = Color::new(0.0, 0.0, 0.0, 0.7);
-        draw_rectangle(0.0, 0.0, screen_width(), screen_height(), overlay_color);
+        // Background
+        draw_rectangle(0.0, 0.0, screen_w, screen_h, Color::new(0.0, 0.0, 0.0, 0.7));
 
-        // Draw title
-        let text_dims = measure_text(title, None, font_size as u16, 1.0);
+        // Title
+        let title_dims = measure_text(title, None, self.font.size as u16, 1.0);
         draw_text(
             title,
-            screen_width() / 2.0 - text_dims.width / 2.0,
-            screen_height() / 2.0,
-            font_size,
+            center_x - title_dims.width / 2.0,
+            center_y - spacing,
+            self.font.size,
             WHITE,
         );
 
-        // Draw button
-        let button = self.get_button_bounds(button_text, button_size);
+        // Button
+        let button = self.get_button_bounds(button_text, self.font.button_size);
         draw_rectangle(button.x, button.y, button.width, button.height, DARKGRAY);
+        let button_dims = measure_text(button_text, None, self.font.button_size as u16, 1.0);
+        draw_text(
+            button_text,
+            button.x + (button.width - button_dims.width) / 2.0,
+            button.y + (button.height + button_dims.height) / 2.0,
+            self.font.button_size,
+            WHITE,
+        );
 
-        // Calculate text dimensions for centering
-        let text_dims = measure_text(button_text, None, button_size as u16, 1.0);
-        let text_x = button.x + (button.width - text_dims.width) / 2.0;
-        let text_y = button.y + (button.height + text_dims.height) / 2.0;
-
-        draw_text(button_text, text_x, text_y, button_size, WHITE);
+        // Subtext
+        let mut y = center_y + spacing * 3.0;
+        for text in subtext {
+            let dims = measure_text(text, None, self.font.stats_size as u16, 1.0);
+            draw_text(
+                text,
+                center_x - dims.width / 2.0,
+                y,
+                self.font.stats_size,
+                WHITE,
+            );
+            y += spacing;
+        }
     }
 
     pub fn check_click(&self, status: GameStatus) -> bool {
@@ -234,16 +226,52 @@ impl Renderer {
             && mouse_y <= button.y + button.height
     }
 
-    fn draw_score(&self, current_score: u32) {
-        let score_text = format!("{} {}", SCORE_TEXT, current_score);
+    fn draw_stats(&self, current_score: u32, level: usize) {
         let font_size = self.font.stats_size;
-        let padding: f32 = 10.0;
+        let padding = 10.0;
 
-        let text_dims = measure_text(&score_text, None, font_size as u16, 1.0);
-        let x = padding;
-        let y = text_dims.height + padding;
+        // Score drawing
+        let score_label_dims = measure_text(SCORE_TEXT, None, font_size as u16, 1.0);
+        let score_num_dims = measure_text(&current_score.to_string(), None, font_size as u16, 1.0);
+        let x_score = if self.screen.offset_x
+            > score_label_dims.width + score_num_dims.width + padding * 3.0
+        {
+            self.screen.offset_x - score_label_dims.width - score_num_dims.width - padding * 2.0
+        } else {
+            padding
+        };
 
-        draw_text(&score_text, x, y, font_size, WHITE);
+        // Level drawing
+        let level_num = (level + 1).to_string();
+        let level_label_dims = measure_text(LEVEL_TEXT, None, font_size as u16, 1.0);
+        let level_num_dims = measure_text(&level_num, None, font_size as u16, 1.0);
+        let total_level_width = level_label_dims.width + level_num_dims.width;
+        let game_field_right = self.screen.offset_x + (WIDTH as f32 * self.screen.block_size);
+        let x_level = if screen_width() > game_field_right + total_level_width + padding * 3.0 {
+            game_field_right + padding * 2.0
+        } else {
+            screen_width() - total_level_width - padding
+        };
+
+        let y = level_num_dims.height + padding;
+
+        // Draw texts
+        draw_text(SCORE_TEXT, x_score, y, font_size, WHITE);
+        draw_text(
+            &current_score.to_string(),
+            x_score + score_label_dims.width + 5.0,
+            y,
+            font_size,
+            WHITE,
+        );
+        draw_text(LEVEL_TEXT, x_level, y, font_size, WHITE);
+        draw_text(
+            &level_num,
+            x_level + level_label_dims.width + 5.0,
+            y,
+            font_size,
+            WHITE,
+        );
     }
 
     fn draw_game_field(&self) {
@@ -309,17 +337,6 @@ impl Renderer {
                 self.draw_block(draw_x as f32, draw_y as f32, piece.typ.color());
             }
         }
-    }
-    fn draw_level_info(&mut self, level: &LevelState) {
-        let level_text = format!("Level: {}", level.current + 1);
-
-        let padding: f32 = 10.0;
-        let font_size = self.font.stats_size;
-        let text_dims = measure_text(&level_text, None, font_size as u16, 1.0);
-        let x = screen_width() - text_dims.width - padding;
-        let y = text_dims.height + padding;
-
-        draw_text(&level_text, x, y, font_size, WHITE);
     }
 
     fn draw_debug_info(&mut self) {
