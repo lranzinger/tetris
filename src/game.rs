@@ -140,6 +140,7 @@ impl Game {
                 if self.renderer.check_click(GameStatus::Start) {
                     self.state.dummy_board = None;
                     self.state.status = GameStatus::Playing;
+                    self.renderer.mark_board_dirty();
                 }
             }
             GameStatus::Playing => self.update_gameplay(),
@@ -176,6 +177,7 @@ impl Game {
             } else {
                 self.lock_piece();
                 self.clear_lines();
+                self.renderer.mark_board_dirty();
                 self.spawn_piece();
             }
         }
@@ -259,6 +261,7 @@ impl Game {
     fn restart(&mut self) {
         let high_score = self.state.score.highest;
         let mut new_state = GameState::new();
+        self.renderer.mark_board_dirty();
         new_state.score.highest = high_score;
         self.state = new_state;
     }
@@ -275,6 +278,7 @@ impl Game {
             }
         }
 
+        self.renderer.mark_board_dirty();
         self.state.board.cells = new_board;
     }
 

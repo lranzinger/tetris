@@ -24,39 +24,37 @@ struct ButtonBounds {
 
 pub struct Renderer {
     game_field: RenderTarget,
+    placed_pieces: RenderTarget,
     pub screen: ScreenConfig,
     text: TextCache,
     font: FontCache,
     last_fps_update: f64,
     current_fps: i32,
+    board_dirty: bool,
 }
 
 impl Renderer {
     pub fn new() -> Self {
         let font = FontCache::new();
         let screen = ScreenConfig::new();
-        let render_target = render_target(screen.field_width as u32, screen.field_height as u32);
-        render_target.texture.set_filter(FilterMode::Nearest);
 
-        let render_target_cam = Camera2D {
-            zoom: vec2(2.0 / screen.field_width, 2.0 / screen.field_height),
-            target: vec2(screen.field_width * 0.5, screen.field_height * 0.5),
-            render_target: Some(render_target.clone()),
-            ..Default::default()
-        };
-        //Prepare game field
-        set_camera(&render_target_cam);
-        Renderer::draw_game_field(&screen);
-        set_default_camera();
-
-        Self {
-            game_field: render_target,
+        // Create render targets
+        let game_field = render_target(screen.field_width as u32, screen.field_height as u32);
+        let placed_pieces = render_target(screen.field_width as u32, screen.field_height as u32);
+        game_field.texture.set_filter(FilterMode::Nearest);
+        placed_pieces.texture.set_filter(FilterMode::Nearest);
+        let mut game = Self {
+            game_field,
+            placed_pieces,
             screen,
             text: TextCache::new(font.stats_size as u16),
             font,
             last_fps_update: 0.0,
             current_fps: 0,
-        }
+            board_dirty: true,
+        };
+        game.update_game_field();
+        game
     }
 
     pub fn draw(&mut self, state: &GameState) {
@@ -65,11 +63,25 @@ impl Renderer {
             self.screen = ScreenConfig::new();
             self.font.update();
             self.text.update(self.font.stats_size as u16);
+            self.update_game_field();
         }
 
-        //Draw game field
+        // Update placed pieces if needed
+        if self.board_dirty {
+            self.update_placed_pieces(&state.board.cells, &state.board.flashing_lines);
+        }
+
+        // Draw game field
         draw_texture(
             &self.game_field.texture,
+            self.screen.offset_x,
+            self.screen.offset_y,
+            WHITE,
+        );
+
+        // Draw placed pieces
+        draw_texture(
+            &self.placed_pieces.texture,
             self.screen.offset_x,
             self.screen.offset_y,
             WHITE,
@@ -78,17 +90,16 @@ impl Renderer {
         match state.status {
             GameStatus::Start => {
                 if let Some(dummy_board) = &state.dummy_board {
-                    self.draw_placed_pieces(&dummy_board.cells, &[]);
+                    self.update_placed_pieces(&dummy_board.cells, &[]);
                 }
+
                 self.draw_start_screen();
             }
             GameStatus::Playing => {
-                self.draw_placed_pieces(&state.board.cells, &state.board.flashing_lines);
                 self.draw_current_piece(&state.piece);
                 self.draw_stats(state.score.current, state.level.current);
             }
             GameStatus::GameOver => {
-                self.draw_placed_pieces(&state.board.cells, &[]);
                 self.draw_game_over(
                     state.score.current,
                     state.score.highest,
@@ -99,10 +110,52 @@ impl Renderer {
         self.draw_debug_info();
     }
 
-    fn draw_block(&self, x: f32, y: f32, color: Color) {
-        let pos_x = self.screen.offset_x + x * self.screen.block_size;
-        let pos_y = self.screen.offset_y + y * self.screen.block_size;
+    fn update_game_field(&mut self) {
+        let screen = &self.screen;
+        set_camera(&Camera2D {
+            zoom: vec2(2.0 / screen.field_width, 2.0 / screen.field_height),
+            target: vec2(screen.field_width * 0.5, screen.field_height * 0.5),
+            render_target: Some(self.game_field.clone()),
+            ..Default::default()
+        });
+        clear_background(BLANK);
+        self.draw_game_field(screen);
+        set_default_camera();
+    }
+
+    fn update_placed_pieces(&mut self, cells: &Board, flashing_lines: &[u8]) {
+        set_camera(&Camera2D {
+            zoom: vec2(
+                2.0 / self.screen.field_width,
+                2.0 / self.screen.field_height,
+            ),
+            target: vec2(
+                self.screen.field_width * 0.5,
+                self.screen.field_height * 0.5,
+            ),
+            render_target: Some(self.placed_pieces.clone()),
+            ..Default::default()
+        });
+        clear_background(BLANK);
+        self.draw_placed_pieces(cells, flashing_lines);
+        set_default_camera();
+        self.board_dirty = false;
+    }
+
+    pub fn mark_board_dirty(&mut self) {
+        self.board_dirty = true;
+    }
+
+    fn draw_block(&self, x: f32, y: f32, color: Color, offset: bool) {
+        let (offset_x, offset_y) = if offset {
+            (self.screen.offset_x, self.screen.offset_y)
+        } else {
+            (0.0, 0.0)
+        };
+
         let size = self.screen.block_size;
+        let pos_x = offset_x + x * size;
+        let pos_y = offset_y + y * size;
 
         // Draw main block with slight gradient
         let darker = Color::new(color.r * 0.8, color.g * 0.8, color.b * 0.8, 1.0);
@@ -139,6 +192,7 @@ impl Renderer {
             Color::new(1.0, 1.0, 1.0, 0.3),
         );
     }
+
     fn get_button_bounds(&self, button_text: &str, font_size: f32) -> ButtonBounds {
         let button_dims = measure_text(button_text, None, font_size as u16, 1.0);
 
@@ -296,7 +350,7 @@ impl Renderer {
         );
     }
 
-    fn draw_game_field(screen: &ScreenConfig) {
+    fn draw_game_field(&self, screen: &ScreenConfig) {
         // Vertical lines
         for x in 0..=WIDTH {
             let thickness = if x % 2 == 0 { 2.0 } else { 1.0 };
@@ -324,18 +378,18 @@ impl Renderer {
         }
     }
 
-    fn draw_placed_pieces(&self, cells: &Board, flashing_lines: &[u8]) {
+    fn draw_placed_pieces(&mut self, cells: &Board, flashing_lines: &[u8]) {
         let is_flash_frame = (get_time() * 10.0) as i32 % 2 == 0;
         for y in 0..HEIGHT as u8 {
             let is_line_flashing = flashing_lines.contains(&y);
             for x in 0..WIDTH as u8 {
                 if let Some(color) = cells[y as usize][x as usize] {
-                    let draw_color = if is_line_flashing && is_flash_frame {
-                        WHITE
-                    } else {
-                        color
-                    };
-                    self.draw_block(x as f32, y as f32, draw_color);
+                    let mut draw_color = color;
+                    if is_line_flashing {
+                        draw_color = if is_flash_frame { WHITE } else { color };
+                    }
+
+                    self.draw_block(x as f32, y as f32, draw_color, false);
                 }
             }
         }
@@ -346,7 +400,7 @@ impl Renderer {
             let draw_x = piece.position.0 + x;
             let draw_y = piece.position.1 + y;
             if draw_y >= 0 {
-                self.draw_block(draw_x as f32, draw_y as f32, piece.typ.color());
+                self.draw_block(draw_x as f32, draw_y as f32, piece.typ.color(), true);
             }
         }
     }
