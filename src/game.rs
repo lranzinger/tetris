@@ -134,7 +134,7 @@ impl Game {
         false
     }
 
-    pub fn update(&mut self) {
+    pub fn update_logic(&mut self) {
         match self.state.status {
             GameStatus::Start => {
                 if self.renderer.check_click(GameStatus::Start) {
@@ -180,10 +180,6 @@ impl Game {
             }
         }
 
-        // Handle input
-        let input_state = self.input.update();
-        self.handle_input(input_state);
-
         if self.is_game_over() {
             let last_highscore = storage::get_high_score();
             let new_highscore = self.state.score.highest;
@@ -194,7 +190,7 @@ impl Game {
         }
     }
 
-    fn handle_input(&mut self, input: InputState) {
+    pub fn handle_input(&mut self, input: InputState) {
         match input {
             InputState::MoveLeft => {
                 if self.can_move(-1, 0) {

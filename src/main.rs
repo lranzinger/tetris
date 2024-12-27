@@ -29,7 +29,9 @@ async fn main() {
 
     let mut game = Game::new();
     loop {
-        game.update();
+        let input_state = game.input.update();
+        game.handle_input(input_state);
+        game.update_logic();
         game.renderer.draw(&game.state);
         next_frame().await;
     }
