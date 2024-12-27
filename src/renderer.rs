@@ -23,6 +23,7 @@ struct ButtonBounds {
 }
 
 pub struct Renderer {
+    game_field: RenderTarget,
     pub screen: ScreenConfig,
     text: TextCache,
     font: FontCache,
@@ -33,8 +34,24 @@ pub struct Renderer {
 impl Renderer {
     pub fn new() -> Self {
         let font = FontCache::new();
+        let screen = ScreenConfig::new();
+        let render_target = render_target(screen.field_width as u32, screen.field_height as u32);
+        render_target.texture.set_filter(FilterMode::Nearest);
+
+        let render_target_cam = Camera2D {
+            zoom: vec2(2.0 / screen.field_width, 2.0 / screen.field_height),
+            target: vec2(screen.field_width * 0.5, screen.field_height * 0.5),
+            render_target: Some(render_target.clone()),
+            ..Default::default()
+        };
+        //Prepare game field
+        set_camera(&render_target_cam);
+        Renderer::draw_game_field(&screen);
+        set_default_camera();
+
         Self {
-            screen: ScreenConfig::new(),
+            game_field: render_target,
+            screen,
             text: TextCache::new(font.stats_size as u16),
             font,
             last_fps_update: 0.0,
@@ -50,7 +67,13 @@ impl Renderer {
             self.text.update(self.font.stats_size as u16);
         }
 
-        self.draw_game_field();
+        //Draw game field
+        draw_texture(
+            &self.game_field.texture,
+            self.screen.offset_x,
+            self.screen.offset_y,
+            WHITE,
+        );
 
         match state.status {
             GameStatus::Start => {
@@ -65,7 +88,7 @@ impl Renderer {
                 self.draw_stats(state.score.current, state.level.current);
             }
             GameStatus::GameOver => {
-                self.draw_placed_pieces(&state.board.cells, &state.board.flashing_lines);
+                self.draw_placed_pieces(&state.board.cells, &[]);
                 self.draw_game_over(
                     state.score.current,
                     state.score.highest,
@@ -73,7 +96,6 @@ impl Renderer {
                 );
             }
         }
-
         self.draw_debug_info();
     }
 
@@ -274,39 +296,29 @@ impl Renderer {
         );
     }
 
-    fn draw_game_field(&self) {
-        let field_width = WIDTH as f32 * self.screen.block_size;
-        let field_height = HEIGHT as f32 * self.screen.block_size;
-
-        // Draw border
-        draw_rectangle_lines(
-            self.screen.offset_x,
-            self.screen.offset_y,
-            field_width,
-            field_height,
-            2.0,
-            GRAY,
-        );
-
-        // Draw grid lines
-        for x in 0..WIDTH {
+    fn draw_game_field(screen: &ScreenConfig) {
+        // Vertical lines
+        for x in 0..=WIDTH {
+            let thickness = if x % 2 == 0 { 2.0 } else { 1.0 };
             draw_line(
-                self.screen.offset_x + x as f32 * self.screen.block_size,
-                self.screen.offset_y,
-                self.screen.offset_x + x as f32 * self.screen.block_size,
-                self.screen.offset_y + field_height,
-                1.0,
+                x as f32 * screen.block_size,
+                0.0,
+                x as f32 * screen.block_size,
+                screen.field_height,
+                thickness,
                 DARKGRAY,
             );
         }
 
-        for y in 0..HEIGHT {
+        // Horizontal lines
+        for y in 0..=HEIGHT {
+            let thickness = if y % 2 == 0 { 2.0 } else { 1.0 };
             draw_line(
-                self.screen.offset_x,
-                self.screen.offset_y + y as f32 * self.screen.block_size,
-                self.screen.offset_x + field_width,
-                self.screen.offset_y + y as f32 * self.screen.block_size,
-                1.0,
+                0.0,
+                y as f32 * screen.block_size,
+                screen.field_width,
+                y as f32 * screen.block_size,
+                thickness,
                 DARKGRAY,
             );
         }

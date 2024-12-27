@@ -6,6 +6,8 @@ pub struct ScreenConfig {
     pub block_size: f32,
     pub offset_x: f32,
     pub offset_y: f32,
+    pub field_width: f32,
+    pub field_height: f32,
     pub size: (f32, f32),
 }
 
@@ -23,10 +25,15 @@ impl ScreenConfig {
         let offset_x = (screen_width - (WIDTH as f32 * block_size)) / 2.0;
         let offset_y = (screen_height - (HEIGHT as f32 * block_size)) / 2.0;
 
+        let field_width = WIDTH as f32 * block_size;
+        let field_height = HEIGHT as f32 * block_size;
+
         Self {
             block_size,
             offset_x,
             offset_y,
+            field_width,
+            field_height,
             size: (screen_width, screen_height),
         }
     }
