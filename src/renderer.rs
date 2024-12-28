@@ -363,9 +363,19 @@ impl Renderer {
     }
 
     fn draw_game_field(&self, screen: &ScreenConfig) {
+        // Draw border
+        draw_rectangle_lines(
+            0.0,
+            0.0,
+            screen.field_width,
+            screen.field_height,
+            3.0,
+            DARKGRAY,
+        );
+
         // Vertical lines
-        for x in 0..=BOARD.width {
-            let thickness = if x % 2 == 0 { 2.0 } else { 1.0 };
+        for x in 1..BOARD.width {
+            let thickness = if x % 2 == 0 { 1.5 } else { 1.0 };
             draw_line(
                 x as f32 * screen.block_size,
                 0.0,
@@ -377,7 +387,7 @@ impl Renderer {
         }
 
         // Horizontal lines
-        for y in 0..=BOARD.height {
+        for y in 1..BOARD.height {
             let thickness = if y % 2 == 0 { 2.0 } else { 1.0 };
             draw_line(
                 0.0,
