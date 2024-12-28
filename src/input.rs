@@ -1,5 +1,7 @@
 use macroquad::prelude::*;
 
+use crate::config::{Time, INPUT};
+
 #[derive(PartialEq, Copy, Clone)]
 pub enum InputState {
     None,
@@ -14,17 +16,6 @@ pub struct TouchPosition {
     x: f32,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
-pub struct Time(f64);
-
-impl std::ops::Sub for Time {
-    type Output = Time;
-
-    fn sub(self, other: Time) -> Time {
-        Time(self.0 - other.0)
-    }
-}
-
 pub struct InputHandler {
     touch_start: Option<(TouchPosition, Time)>,
     last_move_time: Time,
@@ -33,8 +24,6 @@ pub struct InputHandler {
     is_dropping: bool,
     move_direction: Option<InputState>,
 }
-
-const HOLD_THRESHOLD: Time = Time(0.2);
 
 impl InputHandler {
     pub fn new() -> Self {
@@ -63,7 +52,6 @@ impl InputHandler {
     }
 
     fn handle_keyboard(&mut self) -> InputState {
-        const MOVE_COOLDOWN: Time = Time(0.1);
         let current_time = Time(get_time());
 
         // Check for key press
@@ -91,14 +79,14 @@ impl InputHandler {
         // Check for held keys
         if let Some((key, start_time)) = self.key_hold_start {
             if is_key_down(key) {
-                if current_time - start_time > HOLD_THRESHOLD {
+                if current_time - start_time > INPUT.hold_threshold {
                     let elapsed = current_time - self.last_move_time;
                     match key {
-                        KeyCode::Left | KeyCode::A if elapsed > MOVE_COOLDOWN => {
+                        KeyCode::Left | KeyCode::A if elapsed > INPUT.move_cooldown => {
                             self.last_move_time = current_time;
                             return InputState::MoveLeft;
                         }
-                        KeyCode::Right | KeyCode::D if elapsed > MOVE_COOLDOWN => {
+                        KeyCode::Right | KeyCode::D if elapsed > INPUT.move_cooldown => {
                             self.last_move_time = current_time;
                             return InputState::MoveRight;
                         }
@@ -115,11 +103,6 @@ impl InputHandler {
     }
 
     fn handle_touch(&mut self) -> InputState {
-        const SWIPE_THRESHOLD: f32 = 30.0;
-        const TOUCH_THRESHOLD: Time = Time(0.15);
-        const MOVE_COOLDOWN_SWIPE: Time = Time(0.2);
-        const MOVE_COOLDOWN_HOLD: Time = Time(0.1);
-
         let touches = touches();
         let current_time = Time(get_time());
 
@@ -143,9 +126,9 @@ impl InputHandler {
                 }
                 if let Some((start_pos, _)) = self.touch_start {
                     let dx = touch.position.x - start_pos.x;
-                    if dx.abs() > SWIPE_THRESHOLD {
+                    if dx.abs() > INPUT.swipe_threshold {
                         let elapsed = current_time - self.last_move_time;
-                        if elapsed > MOVE_COOLDOWN_SWIPE {
+                        if elapsed > INPUT.move_cooldown_swipe {
                             self.last_move_time = current_time;
                             self.is_moving = true;
                             let direction = if dx > 0.0 {
@@ -163,13 +146,13 @@ impl InputHandler {
             TouchPhase::Stationary => {
                 if self.is_moving {
                     let elapsed = current_time - self.last_move_time;
-                    if elapsed > MOVE_COOLDOWN_HOLD {
+                    if elapsed > INPUT.move_cooldown_hold {
                         self.last_move_time = current_time;
                         return self.move_direction.unwrap_or(InputState::None);
                     }
                 } else if let Some((_, start_time)) = self.touch_start {
                     let touch_duration = current_time - start_time;
-                    if touch_duration > HOLD_THRESHOLD {
+                    if touch_duration > INPUT.hold_threshold {
                         self.is_dropping = true;
                         return InputState::Drop;
                     }
@@ -178,7 +161,7 @@ impl InputHandler {
             TouchPhase::Ended | TouchPhase::Cancelled => {
                 if let Some((_, start_time)) = self.touch_start {
                     let touch_duration = current_time - start_time;
-                    if touch_duration < TOUCH_THRESHOLD && !self.is_moving {
+                    if touch_duration < INPUT.touch_threshold && !self.is_moving {
                         return InputState::Rotate;
                     }
                 }

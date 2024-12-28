@@ -1,19 +1,11 @@
 use crate::{
     cache::{FontCache, TextCache},
-    game::{HEIGHT, WIDTH},
+    config::{BOARD, TEXT, TIMING},
     screen::ScreenConfig,
     state::{Board, GameState, GameStatus, PieceState},
 };
 use macroquad::prelude::*;
 use smallvec::{smallvec, SmallVec};
-
-const START_TEXT: &str = "";
-const START_BUTTON: &str = "Start";
-const GAMEOVER_TEXT: &str = "Spiel vorbei";
-const GAMEOVER_BUTTON: &str = "Neu starten";
-pub const SCORE_TEXT: &str = "Score: ";
-pub const LEVEL_TEXT: &str = "Level: ";
-const HIGHSCORE_TEXT: &str = "Highscore: ";
 
 struct ButtonBounds {
     x: f32,
@@ -66,7 +58,7 @@ impl Renderer {
         let new_flashing = if state.board.flashing_lines.is_empty() {
             false
         } else {
-            (get_time() * 10.0) as i32 % 2 == 0
+            (get_time() * TIMING.flashing_intervall) as i32 % 2 == 0
         };
 
         if self.flashing != new_flashing {
@@ -234,20 +226,20 @@ impl Renderer {
             "Halten: Fallen lassen",
         ];
 
-        self.draw_overlay_screen(START_TEXT, START_BUTTON, instructions);
+        self.draw_overlay_screen(TEXT.start, TEXT.start_button, instructions);
     }
 
     fn draw_game_over(&mut self, score: u32, high_score: u32, level: usize) {
-        let score_text = [SCORE_TEXT, &score.to_string()].join("");
-        let highscore_text = [HIGHSCORE_TEXT, &high_score.to_string()].join("");
-        let level_text = [LEVEL_TEXT, &(level + 1).to_string()].join("");
+        let score_text = [TEXT.score, &score.to_string()].join("");
+        let highscore_text = [TEXT.highscore, &high_score.to_string()].join("");
+        let level_text = [TEXT.level, &(level + 1).to_string()].join("");
         let scores = smallvec![
             score_text.as_str(),
             level_text.as_str(),
             highscore_text.as_str(),
         ];
 
-        self.draw_overlay_screen(GAMEOVER_TEXT, GAMEOVER_BUTTON, scores);
+        self.draw_overlay_screen(&TEXT.gameover, &TEXT.gameover_button, scores);
     }
 
     fn draw_overlay_screen(
@@ -309,8 +301,8 @@ impl Renderer {
 
         let button_size = self.font.button_size;
         let button_text = match status {
-            GameStatus::Start => START_BUTTON,
-            GameStatus::GameOver => GAMEOVER_BUTTON,
+            GameStatus::Start => TEXT.start_button,
+            GameStatus::GameOver => TEXT.gameover_button,
             _ => return false,
         };
         let (mouse_x, mouse_y) = mouse_position();
@@ -342,7 +334,7 @@ impl Renderer {
         // Level drawing
         let level_num_width = self.text.get_number_width((level + 1) as u32);
         let total_level_width = self.text.level_label_dims.width + level_num_width;
-        let game_field_right = self.screen.offset_x + (WIDTH as f32 * self.screen.block_size);
+        let game_field_right = self.screen.offset_x + (BOARD.width as f32 * self.screen.block_size);
         let x_level = if screen_width() > game_field_right + total_level_width + padding * 3.0 {
             game_field_right + padding * 2.0
         } else {
@@ -352,7 +344,7 @@ impl Renderer {
         let y = self.text.level_label_dims.height + padding;
 
         // Draw texts
-        draw_text(SCORE_TEXT, x_score, y, font_size, WHITE);
+        draw_text(TEXT.score, x_score, y, font_size, WHITE);
         draw_text(
             &current_score.to_string(),
             x_score + self.text.score_label_dims.width,
@@ -360,7 +352,7 @@ impl Renderer {
             font_size,
             WHITE,
         );
-        draw_text(LEVEL_TEXT, x_level, y, font_size, WHITE);
+        draw_text(TEXT.level, x_level, y, font_size, WHITE);
         draw_text(
             &(level + 1).to_string(),
             x_level + self.text.level_label_dims.width,
@@ -372,7 +364,7 @@ impl Renderer {
 
     fn draw_game_field(&self, screen: &ScreenConfig) {
         // Vertical lines
-        for x in 0..=WIDTH {
+        for x in 0..=BOARD.width {
             let thickness = if x % 2 == 0 { 2.0 } else { 1.0 };
             draw_line(
                 x as f32 * screen.block_size,
@@ -385,7 +377,7 @@ impl Renderer {
         }
 
         // Horizontal lines
-        for y in 0..=HEIGHT {
+        for y in 0..=BOARD.height {
             let thickness = if y % 2 == 0 { 2.0 } else { 1.0 };
             draw_line(
                 0.0,
@@ -399,9 +391,9 @@ impl Renderer {
     }
 
     fn draw_placed_pieces(&mut self, cells: &Board, flashing_lines: &[u8], flashing: bool) {
-        for y in 0..HEIGHT as u8 {
+        for y in 0..BOARD.height as u8 {
             let is_line_flashing = flashing_lines.contains(&y);
-            for x in 0..WIDTH as u8 {
+            for x in 0..BOARD.width as u8 {
                 if let Some(color) = cells[y as usize][x as usize] {
                     let draw_color = if flashing && is_line_flashing {
                         WHITE

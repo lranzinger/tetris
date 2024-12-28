@@ -1,6 +1,6 @@
 use crate::{
+    config::{BOARD, LEVEL_CONFIGS, SCORE, TIMING},
     input::{InputHandler, InputState},
-    level::LEVEL_CONFIGS,
     renderer::Renderer,
     state::{GameState, GameStatus, RotationState},
     storage,
@@ -8,10 +8,6 @@ use crate::{
 };
 use macroquad::prelude::*;
 use smallvec::SmallVec;
-
-pub const WIDTH: i32 = 10;
-pub const HEIGHT: i32 = 20;
-const LINE_CLEAR_DURATION: f32 = 0.5;
 
 pub struct Game {
     pub state: GameState,
@@ -33,7 +29,7 @@ impl Game {
         let piece_width = shape.iter().map(|(x, _)| x).max().unwrap()
             - shape.iter().map(|(x, _)| x).min().unwrap()
             + 1;
-        self.state.piece.position = (WIDTH / 2 - piece_width / 2, -1);
+        self.state.piece.position = (BOARD.width / 2 - piece_width / 2, -1);
         self.state.piece.rotation = RotationState::Zero;
         self.state.piece.rotated = self.get_rotated_shape();
     }
@@ -68,8 +64,8 @@ impl Game {
         for &(x, y) in &self.state.piece.rotated {
             let new_x = self.state.piece.position.0 + x + dx;
             let new_y = self.state.piece.position.1 + y + dy;
-            if !(0..WIDTH).contains(&new_x)
-                || new_y >= HEIGHT
+            if !(0..BOARD.width).contains(&new_x)
+                || new_y >= BOARD.height
                 || (new_y >= 0 && self.state.board.cells[new_y as usize][new_x as usize].is_some())
             {
                 return false;
@@ -94,7 +90,7 @@ impl Game {
         let mut lines_to_clear = SmallVec::new();
 
         // Identify full lines
-        for y in 0..HEIGHT as u8 {
+        for y in 0..BOARD.height as u8 {
             if self.state.board.cells[y as usize]
                 .iter()
                 .all(|&cell| cell.is_some())
@@ -108,7 +104,7 @@ impl Game {
 
             // Start line clear animation
             self.state.board.flashing_lines = lines_to_clear;
-            self.state.timing.line_clear_timer = LINE_CLEAR_DURATION;
+            self.state.timing.line_clear_timer = TIMING.line_clearing;
 
             // Calculate scrore
             let score = self.calculate_score(num_of_lines_to_clear);
@@ -248,8 +244,8 @@ impl Game {
             let new_x = self.state.piece.position.0 + x;
             let new_y = self.state.piece.position.1 + y;
             if new_x < 0
-                || new_x >= WIDTH
-                || new_y >= HEIGHT
+                || new_x >= BOARD.width
+                || new_y >= BOARD.height
                 || (new_y >= 0 && self.state.board.cells[new_y as usize][new_x as usize].is_some())
             {
                 return false;
@@ -267,11 +263,11 @@ impl Game {
     }
 
     fn remove_flashing_lines(&mut self) {
-        let mut new_board = [[None; WIDTH as usize]; HEIGHT as usize];
-        let mut new_row = HEIGHT as usize - 1;
+        let mut new_board = [[None; BOARD.width as usize]; BOARD.height as usize];
+        let mut new_row = BOARD.height as usize - 1;
 
         // Copy the board, skipping the lines that were cleared
-        for y in (0..HEIGHT as u8).rev() {
+        for y in (0..BOARD.height as u8).rev() {
             if !self.state.board.flashing_lines.contains(&y) {
                 new_board[new_row] = self.state.board.cells[y as usize];
                 new_row = new_row.saturating_sub(1);
@@ -296,10 +292,10 @@ impl Game {
 
     fn calculate_score(&self, lines_cleared: u32) -> u32 {
         let base_score = match lines_cleared {
-            1 => 100,
-            2 => 300,
-            3 => 500,
-            4 => 800,
+            1 => SCORE.single,
+            2 => SCORE.double,
+            3 => SCORE.triple,
+            4 => SCORE.tetris,
             _ => 0,
         };
 

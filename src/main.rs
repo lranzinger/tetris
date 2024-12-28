@@ -1,21 +1,22 @@
 mod cache;
+mod config;
 mod dummy_board;
 mod game;
 mod input;
-mod level;
 mod renderer;
 mod screen;
 mod state;
 mod storage;
 mod tetromino;
 
+use config::TEXT;
 use game::Game;
 use macroquad::prelude::*;
 use miniquad::date;
 
 fn window_conf() -> Conf {
     Conf {
-        window_title: "Blocks".to_owned(),
+        window_title: TEXT.game_name.to_string(),
         high_dpi: true,
         window_resizable: true,
         ..Default::default()

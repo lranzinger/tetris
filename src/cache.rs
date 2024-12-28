@@ -3,7 +3,7 @@ use macroquad::{
     window::{screen_height, screen_width},
 };
 
-use crate::renderer::{LEVEL_TEXT, SCORE_TEXT};
+use crate::config::TEXT;
 
 pub struct FontCache {
     pub size: f32,
@@ -51,8 +51,8 @@ impl TextCache {
     }
 
     pub fn update(&mut self, font_size: u16) {
-        self.score_label_dims = measure_text(SCORE_TEXT, None, font_size, 1.0);
-        self.level_label_dims = measure_text(LEVEL_TEXT, None, font_size, 1.0);
+        self.score_label_dims = measure_text(TEXT.score, None, font_size, 1.0);
+        self.level_label_dims = measure_text(TEXT.level, None, font_size, 1.0);
 
         // Cache all single digit measurements
         for i in 0..10 {

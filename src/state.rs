@@ -1,14 +1,9 @@
 use macroquad::color::Color;
 use smallvec::SmallVec;
 
-use crate::{
-    dummy_board::DummyBoard,
-    game::{HEIGHT, WIDTH},
-    storage,
-    tetromino::Tetromino,
-};
+use crate::{config::BOARD, dummy_board::DummyBoard, storage, tetromino::Tetromino};
 
-pub type Board = [[Option<Color>; WIDTH as usize]; HEIGHT as usize];
+pub type Board = [[Option<Color>; BOARD.width as usize]; BOARD.height as usize];
 
 pub enum GameStatus {
     Start,
@@ -65,13 +60,13 @@ impl GameState {
             },
             dummy_board: Some(DummyBoard::new()),
             board: BoardState {
-                cells: [[None; WIDTH as usize]; HEIGHT as usize],
+                cells: [[None; BOARD.width as usize]; BOARD.height as usize],
                 flashing_lines: SmallVec::new(),
             },
             piece: PieceState {
                 typ: initial_piece,
                 rotated: initial_piece.shape(),
-                position: (WIDTH / 2 - 2, -1),
+                position: (BOARD.width / 2 - 2, -1),
                 rotation: RotationState::Zero,
             },
             timing: TimingState {
