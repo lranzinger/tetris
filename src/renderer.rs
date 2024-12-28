@@ -189,13 +189,11 @@ impl Renderer {
         let pos_x = offset_x + x * size;
         let pos_y = offset_y + y * size;
 
-        // Draw main block with slight gradient
-        let darker = Color::new(color.r * 0.8, color.g * 0.8, color.b * 0.8, 1.0);
-
         // Draw block face
         draw_rectangle(pos_x, pos_y, size, size, color);
 
         // Draw inner shading for 3D effect
+        let darker = Color::new(color.r * 0.8, color.g * 0.8, color.b * 0.8, 1.0);
         draw_rectangle(
             pos_x + size * 0.1,
             pos_y + size * 0.1,
@@ -212,16 +210,6 @@ impl Renderer {
             size,
             size * 0.1,                     // Thicker lines
             Color::new(0.0, 0.0, 0.0, 0.5), // Semi-transparent black
-        );
-
-        // Draw highlight
-        draw_line(
-            pos_x + size * 0.1,
-            pos_y + size * 0.1,
-            pos_x + size * 0.9,
-            pos_y + size * 0.1,
-            size * 0.05,
-            Color::new(1.0, 1.0, 1.0, 0.3),
         );
     }
 
