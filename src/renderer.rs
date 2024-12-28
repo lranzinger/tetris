@@ -63,10 +63,10 @@ impl Renderer {
             self.set_render_targets();
         }
 
-        let new_flashing = if !state.board.flashing_lines.is_empty() {
-            (get_time() * 10.0) as i32 % 2 == 0
-        } else {
+        let new_flashing = if state.board.flashing_lines.is_empty() {
             false
+        } else {
+            (get_time() * 10.0) as i32 % 2 == 0
         };
 
         if self.flashing != new_flashing {
