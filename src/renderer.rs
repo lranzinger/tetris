@@ -31,6 +31,7 @@ pub struct Renderer {
     last_fps_update: f64,
     current_fps: i32,
     board_dirty: bool,
+    flashing: bool,
 }
 
 impl Renderer {
@@ -67,9 +68,24 @@ impl Renderer {
             self.update_game_field();
         }
 
+        let new_flashing = if !state.board.flashing_lines.is_empty() {
+            (get_time() * 10.0) as i32 % 2 == 0
+        } else {
+            false
+        };
+
+        if self.flashing != new_flashing {
+            self.board_dirty = true;
+            self.flashing = new_flashing;
+        }
+
         // Update placed pieces if needed
         if self.board_dirty {
-            self.update_placed_pieces(&state.board.cells, &state.board.flashing_lines);
+            self.update_placed_pieces(
+                &state.board.cells,
+                &state.board.flashing_lines,
+                self.flashing,
+            );
         }
 
         // Draw game field
@@ -91,7 +107,7 @@ impl Renderer {
         match state.status {
             GameStatus::Start => {
                 if let Some(dummy_board) = &state.dummy_board {
-                    self.update_placed_pieces(&dummy_board.cells, &[]);
+                    self.update_placed_pieces(&dummy_board.cells, &[], false);
                 }
 
                 self.draw_start_screen();
@@ -124,7 +140,7 @@ impl Renderer {
         set_default_camera();
     }
 
-    fn update_placed_pieces(&mut self, cells: &Board, flashing_lines: &[u8]) {
+    fn update_placed_pieces(&mut self, cells: &Board, flashing_lines: &[u8], flashing: bool) {
         set_camera(&Camera2D {
             zoom: vec2(
                 2.0 / self.screen.field_width,
@@ -138,7 +154,7 @@ impl Renderer {
             ..Default::default()
         });
         clear_background(BLANK);
-        self.draw_placed_pieces(cells, flashing_lines);
+        self.draw_placed_pieces(cells, flashing_lines, flashing);
         set_default_camera();
         self.board_dirty = false;
     }
@@ -379,16 +395,16 @@ impl Renderer {
         }
     }
 
-    fn draw_placed_pieces(&mut self, cells: &Board, flashing_lines: &[u8]) {
-        let is_flash_frame = (get_time() * 10.0) as i32 % 2 == 0;
+    fn draw_placed_pieces(&mut self, cells: &Board, flashing_lines: &[u8], flashing: bool) {
         for y in 0..HEIGHT as u8 {
             let is_line_flashing = flashing_lines.contains(&y);
             for x in 0..WIDTH as u8 {
                 if let Some(color) = cells[y as usize][x as usize] {
-                    let mut draw_color = color;
-                    if is_line_flashing {
-                        draw_color = if is_flash_frame { WHITE } else { color };
-                    }
+                    let draw_color = if flashing && is_line_flashing {
+                        WHITE
+                    } else {
+                        color
+                    };
 
                     self.draw_block(x as f32, y as f32, draw_color, false);
                 }
