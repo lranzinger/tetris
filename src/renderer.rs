@@ -43,7 +43,7 @@ impl Renderer {
         let placed_pieces = render_target(screen.field_width as u32, screen.field_height as u32);
         game_field.texture.set_filter(FilterMode::Nearest);
         placed_pieces.texture.set_filter(FilterMode::Nearest);
-        let mut game = Self {
+        let mut renderer = Self {
             game_field,
             placed_pieces,
             screen,
@@ -52,9 +52,10 @@ impl Renderer {
             last_fps_update: 0.0,
             current_fps: 0,
             board_dirty: true,
+            flashing: false,
         };
-        game.update_game_field();
-        game
+        renderer.update_game_field();
+        renderer
     }
 
     pub fn draw(&mut self, state: &GameState) {
