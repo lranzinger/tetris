@@ -39,23 +39,18 @@ impl Renderer {
         let font = FontCache::new();
         let screen = ScreenConfig::new();
 
-        // Create render targets
-        let game_field = render_target(screen.field_width as u32, screen.field_height as u32);
-        let placed_pieces = render_target(screen.field_width as u32, screen.field_height as u32);
-        game_field.texture.set_filter(FilterMode::Nearest);
-        placed_pieces.texture.set_filter(FilterMode::Nearest);
         let mut renderer = Self {
-            game_field,
-            placed_pieces,
+            game_field: render_target(0, 0),
+            placed_pieces: render_target(0, 0),
             screen,
             text: TextCache::new(font.stats_size as u16),
             font,
             last_fps_update: 0.0,
             current_fps: 0,
-            board_dirty: true,
+            board_dirty: false,
             flashing: false,
         };
-        renderer.update_game_field();
+        renderer.set_render_targets();
         renderer
     }
 
@@ -65,7 +60,7 @@ impl Renderer {
             self.screen = ScreenConfig::new();
             self.font.update();
             self.text.update(self.font.stats_size as u16);
-            self.update_game_field();
+            self.set_render_targets();
         }
 
         let new_flashing = if !state.board.flashing_lines.is_empty() {
@@ -157,6 +152,26 @@ impl Renderer {
         self.draw_placed_pieces(cells, flashing_lines, flashing);
         set_default_camera();
         self.board_dirty = false;
+    }
+
+    fn set_render_targets(&mut self) {
+        // Create new render targets at new size
+        self.game_field = render_target(
+            self.screen.field_width as u32,
+            self.screen.field_height as u32,
+        );
+        self.placed_pieces = render_target(
+            self.screen.field_width as u32,
+            self.screen.field_height as u32,
+        );
+
+        // Set filtering mode
+        self.game_field.texture.set_filter(FilterMode::Nearest);
+        self.placed_pieces.texture.set_filter(FilterMode::Nearest);
+
+        // Update game field with new size
+        self.update_game_field();
+        self.board_dirty = true;
     }
 
     pub fn mark_board_dirty(&mut self) {
