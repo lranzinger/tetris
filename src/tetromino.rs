@@ -13,15 +13,15 @@ pub enum Tetromino {
 }
 
 impl Tetromino {
-    pub fn shape(&self) -> Vec<(i32, i32)> {
+    pub fn shape(&self) -> [(i32, i32); 4] {
         match self {
-            Tetromino::I => vec![(0, 1), (1, 1), (2, 1), (3, 1)],
-            Tetromino::O => vec![(0, 0), (1, 0), (0, 1), (1, 1)],
-            Tetromino::T => vec![(1, 0), (0, 1), (1, 1), (2, 1)],
-            Tetromino::S => vec![(1, 0), (2, 0), (0, 1), (1, 1)],
-            Tetromino::Z => vec![(0, 0), (1, 0), (1, 1), (2, 1)],
-            Tetromino::J => vec![(0, 0), (0, 1), (1, 1), (2, 1)],
-            Tetromino::L => vec![(2, 0), (0, 1), (1, 1), (2, 1)],
+            Tetromino::I => [(0, 1), (1, 1), (2, 1), (3, 1)],
+            Tetromino::O => [(0, 0), (1, 0), (0, 1), (1, 1)],
+            Tetromino::T => [(1, 0), (0, 1), (1, 1), (2, 1)],
+            Tetromino::S => [(1, 0), (2, 0), (0, 1), (1, 1)],
+            Tetromino::Z => [(0, 0), (1, 0), (1, 1), (2, 1)],
+            Tetromino::J => [(0, 0), (0, 1), (1, 1), (2, 1)],
+            Tetromino::L => [(2, 0), (0, 1), (1, 1), (2, 1)],
         }
     }
 

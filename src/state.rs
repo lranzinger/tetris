@@ -14,7 +14,7 @@ pub enum GameStatus {
 pub struct PieceState {
     pub typ: Tetromino,
     pub position: (i32, i32),
-    pub rotated: Vec<(i32, i32)>,
+    pub rotated: [(i32, i32); 4],
     pub rotation: RotationState,
 }
 

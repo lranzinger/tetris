@@ -34,29 +34,18 @@ impl Game {
         self.state.piece.rotated = self.get_rotated_shape();
     }
 
-    fn get_rotated_shape(&self) -> Vec<(i32, i32)> {
+    fn get_rotated_shape(&self) -> [(i32, i32); 4] {
         let shape = self.state.piece.typ.shape();
         let pivot = (1, 1);
 
-        let moved_center: Vec<_> = shape
-            .iter()
-            .map(|&(x, y)| (x - pivot.0, y - pivot.1))
-            .collect();
+        // Using array methods directly
+        let moved_center = shape.map(|(x, y)| (x - pivot.0, y - pivot.1));
 
         match self.state.piece.rotation {
             RotationState::Zero => shape,
-            RotationState::Right => moved_center
-                .iter()
-                .map(|&(x, y)| (-y + pivot.0, x + pivot.1))
-                .collect(),
-            RotationState::Two => moved_center
-                .iter()
-                .map(|&(x, y)| (-x + pivot.0, -y + pivot.1))
-                .collect(),
-            RotationState::Left => moved_center
-                .iter()
-                .map(|&(x, y)| (y + pivot.0, -x + pivot.1))
-                .collect(),
+            RotationState::Right => moved_center.map(|(x, y)| (-y + pivot.0, x + pivot.1)),
+            RotationState::Two => moved_center.map(|(x, y)| (-x + pivot.0, -y + pivot.1)),
+            RotationState::Left => moved_center.map(|(x, y)| (y + pivot.0, -x + pivot.1)),
         }
     }
 
