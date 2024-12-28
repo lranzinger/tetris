@@ -1,5 +1,5 @@
 mod cache;
-mod dummy;
+mod dummy_board;
 mod game;
 mod input;
 mod level;

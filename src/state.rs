@@ -2,7 +2,7 @@ use macroquad::color::Color;
 use smallvec::SmallVec;
 
 use crate::{
-    dummy::DummyBoard,
+    dummy_board::DummyBoard,
     game::{HEIGHT, WIDTH},
     storage,
     tetromino::Tetromino,
