@@ -239,7 +239,7 @@ impl Renderer {
             highscore_text.as_str(),
         ];
 
-        self.draw_overlay_screen(&TEXT.gameover, &TEXT.gameover_button, scores);
+        self.draw_overlay_screen(TEXT.gameover, TEXT.gameover_button, scores);
     }
 
     fn draw_overlay_screen(
