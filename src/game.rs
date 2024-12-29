@@ -2,9 +2,9 @@ use crate::{
     config::{BOARD, LEVEL_CONFIGS, SCORE, TIMING},
     input::{InputHandler, InputState},
     renderer::Renderer,
-    state::{GameState, GameStatus, RotationState},
+    state::{GameState, GameStatus},
     storage,
-    tetromino::Tetromino,
+    tetromino::{RotationState, Tetromino},
 };
 use macroquad::prelude::*;
 use smallvec::SmallVec;

@@ -50,3 +50,22 @@ impl Tetromino {
         PIECES[gen_range(0, PIECES.len())]
     }
 }
+
+#[derive(Clone, Copy)]
+pub enum RotationState {
+    Zero = 0,
+    Right = 1,
+    Two = 2,
+    Left = 3,
+}
+
+impl RotationState {
+    pub fn next(&self) -> Self {
+        match self {
+            RotationState::Zero => RotationState::Right,
+            RotationState::Right => RotationState::Two,
+            RotationState::Two => RotationState::Left,
+            RotationState::Left => RotationState::Zero,
+        }
+    }
+}

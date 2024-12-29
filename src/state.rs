@@ -1,7 +1,12 @@
 use macroquad::color::Color;
 use smallvec::SmallVec;
 
-use crate::{config::BOARD, dummy_board::DummyBoard, storage, tetromino::Tetromino};
+use crate::{
+    config::BOARD,
+    dummy_board::DummyBoard,
+    storage,
+    tetromino::{RotationState, Tetromino},
+};
 
 pub type Board = [[Option<Color>; BOARD.width as usize]; BOARD.height as usize];
 
@@ -78,25 +83,6 @@ impl GameState {
                 current: 0,
                 total_lines_cleared: 0,
             },
-        }
-    }
-}
-
-#[derive(Clone, Copy)]
-pub enum RotationState {
-    Zero = 0,
-    Right = 1,
-    Two = 2,
-    Left = 3,
-}
-
-impl RotationState {
-    pub fn next(&self) -> Self {
-        match self {
-            RotationState::Zero => RotationState::Right,
-            RotationState::Right => RotationState::Two,
-            RotationState::Two => RotationState::Left,
-            RotationState::Left => RotationState::Zero,
         }
     }
 }
