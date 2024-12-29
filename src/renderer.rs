@@ -5,7 +5,6 @@ use crate::{
     state::{Board, GameState, GameStatus, PieceState},
 };
 use macroquad::prelude::*;
-use smallvec::{smallvec, SmallVec};
 
 struct ButtonBounds {
     x: f32,
@@ -220,7 +219,7 @@ impl Renderer {
     }
 
     fn draw_start_screen(&mut self) {
-        let instructions = smallvec![
+        let instructions = [
             "Links/Rechts: Bewegen",
             "Tippen: Drehen",
             "Halten: Fallen lassen",
@@ -233,7 +232,7 @@ impl Renderer {
         let score_text = [TEXT.score, &score.to_string()].join("");
         let highscore_text = [TEXT.highscore, &high_score.to_string()].join("");
         let level_text = [TEXT.level, &(level + 1).to_string()].join("");
-        let scores = smallvec![
+        let scores = [
             score_text.as_str(),
             level_text.as_str(),
             highscore_text.as_str(),
@@ -242,12 +241,7 @@ impl Renderer {
         self.draw_overlay_screen(TEXT.gameover, TEXT.gameover_button, scores);
     }
 
-    fn draw_overlay_screen(
-        &mut self,
-        title: &str,
-        button_text: &str,
-        subtext: SmallVec<[&str; 3]>,
-    ) {
+    fn draw_overlay_screen(&mut self, title: &str, button_text: &str, subtext: [&str; 3]) {
         let screen_w = screen_width();
         let screen_h = screen_height();
         let center_x = screen_w / 2.0;
